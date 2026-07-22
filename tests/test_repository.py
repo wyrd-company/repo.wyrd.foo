@@ -188,6 +188,29 @@ class ManifestTests(unittest.TestCase):
             manifest = repository.validate_queue_commit(root, commit, path, allowlist)
             self.assertEqual(manifest["product"], "sample-tool")
 
+    def test_queue_accepts_production_detached_checkout_with_remote_inbox_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            commit, path, allowlist = self.queue_commit(root, self.manifest())
+            self.git(root, "update-ref", "refs/remotes/origin/release-manifests", commit)
+            self.git(root, "checkout", "--quiet", "--detach", commit)
+            self.git(root, "branch", "--delete", "--force", "release-manifests")
+
+            local_ref = subprocess.run(
+                ["git", "-C", str(root), "show-ref", "--verify", "refs/heads/release-manifests"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            self.assertNotEqual(local_ref.returncode, 0)
+            self.assertEqual(
+                self.git(root, "rev-parse", "refs/remotes/origin/release-manifests"),
+                commit,
+            )
+
+            manifest = repository.validate_queue_commit(root, commit, path, allowlist)
+            self.assertEqual(manifest["product"], "sample-tool")
+
     def test_queue_rejects_additional_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

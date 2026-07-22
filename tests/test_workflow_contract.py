@@ -32,8 +32,16 @@ class WorkflowContractTests(unittest.TestCase):
 
     def test_publisher_and_queue_are_separate_exact_checkouts(self) -> None:
         self.assertIn("path: publisher", WORKFLOW)
-        self.assertIn("path: queue", WORKFLOW)
-        self.assertIn("ref: ${{ env.INBOX_COMMIT }}", WORKFLOW)
+        queue_checkout = re.search(
+            r"- name: Check out exact inbox commit as untrusted data(?P<body>.*?)(?=\n      - name:)",
+            WORKFLOW,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(queue_checkout)
+        assert queue_checkout is not None
+        self.assertIn("path: queue", queue_checkout["body"])
+        self.assertIn("ref: ${{ env.INBOX_COMMIT }}", queue_checkout["body"])
+        self.assertIn("fetch-depth: 0", queue_checkout["body"])
         match = re.search(r"ref: ([0-9a-f]{40}) # PUBLISHER_CODE_SHA", WORKFLOW)
         self.assertIsNotNone(match)
         self.assertNotIn("queue/scripts/", WORKFLOW)

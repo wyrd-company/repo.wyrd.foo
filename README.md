@@ -91,7 +91,9 @@ S3 endpoint and bucket without logging the configured URL.
 
 ## Required repository rulesets
 
-Create `release-manifests` before distributing App credentials. Configure the
+Create `release-manifests` from an existing commit before distributing App
+credentials; do not create it as an orphan branch. The first manifest addition
+must have exactly one parent, like every later inbox commit. Configure the
 following rules as separate rulesets so each bypass has the narrow scope
 described here:
 
