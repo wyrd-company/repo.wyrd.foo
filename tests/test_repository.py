@@ -109,6 +109,40 @@ class ManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(repository.ManifestError, "control character"):
             repository.validate_manifest(manifest)
 
+    def test_maintainer_cannot_inject_pkgbuild_lines(self) -> None:
+        injections = (
+            "Package Maintainers\r# injected <packages@example.invalid>",
+            "Package Maintainers\n# injected <packages@example.invalid>",
+            "Package Maintainers\r\n# injected <packages@example.invalid>",
+            "Package Maintainers\u2028# injected <packages@example.invalid>",
+        )
+        for maintainer in injections:
+            manifest = self.manifest()
+            manifest["package"]["maintainer"] = maintainer
+            with self.subTest(maintainer=repr(maintainer)), self.assertRaisesRegex(
+                repository.ManifestError, "control character"
+            ):
+                repository.validate_manifest(manifest)
+
+    def test_maintainer_accepts_safe_display_names(self) -> None:
+        manifest = self.manifest()
+        manifest["package"]["maintainer"] = (
+            "Package Maintainers, Inc. <packages+aur@example.invalid>"
+        )
+        repository.validate_manifest(manifest)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = root / "manifest.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            output = root / "rendered"
+            repository.render_aur(manifest_path, output)
+            lines = (output / "PKGBUILD").read_text(encoding="utf-8").splitlines()
+            self.assertEqual(
+                lines[0],
+                "# Maintainer: Package Maintainers, Inc. <packages+aur@example.invalid>",
+            )
+            self.assertEqual(lines[1], "pkgname='sample-tool-bin'")
+
     def test_submit_is_canonical_idempotent_and_immutable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -44,12 +44,16 @@ docker build --quiet --network host \
 docker run --rm --volume "${root}:/repo:ro" \
   --volume "${release_project}/dist:/goreleaser-dist:ro" "$integration_image"
 
-rendered="${work}/rendered"
+rendered="${work}/rendered package"
 python3 "${root}/scripts/repository.py" render-aur \
   "${root}/tests/fixtures/sample-tool-1.2.3.json" "$rendered"
 aur_build_image='archlinux@sha256:412efebb0eeef0ef322ff24ad73f82b1ba2d3b12377db4c5fbe3074c7e7e8678'
-docker run --rm --volume "${rendered}:/source:ro" "$aur_build_image" \
+docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_build_image" \
   bash -euc '
+    if touch /source/write-probe 2>/dev/null; then
+      echo "AUR source bind mount is writable." >&2
+      exit 1
+    fi
     useradd --create-home builder
     cp -R /source/. /home/builder/package
     chown -R builder:builder /home/builder/package

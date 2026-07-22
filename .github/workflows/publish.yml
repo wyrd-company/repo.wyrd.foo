@@ -114,4 +114,4 @@ jobs:
         env:
           AUR_ACCOUNT: ${{ secrets.AUR_ACCOUNT }}
           AUR_PRIVATE_KEY: ${{ secrets.AUR_PRIVATE_KEY }}
-        run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}" ../.tmp/aur
+        run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}"

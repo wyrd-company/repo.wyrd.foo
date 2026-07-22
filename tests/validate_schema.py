@@ -21,6 +21,18 @@ FIXTURE = ROOT / "tests" / "fixtures" / "sample-tool-1.2.3.json"
 schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
 validator_class = validator_for(schema)
 validator_class.check_schema(schema)
-validator_class(schema, format_checker=validator_class.FORMAT_CHECKER).validate(
-    json.loads(FIXTURE.read_text(encoding="utf-8"))
-)
+validator = validator_class(schema, format_checker=validator_class.FORMAT_CHECKER)
+fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+validator.validate(fixture)
+
+safe = json.loads(json.dumps(fixture))
+safe["package"]["maintainer"] = "Package Maintainers, Inc. <packages+aur@example.invalid>"
+validator.validate(safe)
+
+for line_break in ("\r", "\n", "\r\n"):
+    injected = json.loads(json.dumps(fixture))
+    injected["package"]["maintainer"] = (
+        f"Package Maintainers{line_break}# injected <packages@example.invalid>"
+    )
+    if not list(validator.iter_errors(injected)):
+        raise AssertionError("maintainer line-break injection passed JSON Schema validation")

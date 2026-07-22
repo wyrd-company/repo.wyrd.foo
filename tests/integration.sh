@@ -56,6 +56,21 @@ python3 "${root}/scripts/repository.py" stage \
   "$manifest" "$artifacts" "$stage" "${work}/pubkey.gpg"
 "${root}/scripts/build-indexes.sh" "$stage"
 
+if grep -aq '^-----BEGIN PGP PUBLIC KEY BLOCK-----$' "${stage}/pubkey.gpg"; then
+  echo 'pubkey.gpg must be a binary OpenPGP keyring.' >&2
+  exit 1
+fi
+grep -aq '^-----BEGIN PGP PUBLIC KEY BLOCK-----$' "${stage}/pubkey.asc"
+binary_fingerprint="$(
+  gpg --batch --show-keys --with-colons "${stage}/pubkey.gpg" |
+    awk -F: '$1 == "fpr" { print $10; exit }'
+)"
+armored_fingerprint="$(
+  gpg --batch --show-keys --with-colons "${stage}/pubkey.asc" |
+    awk -F: '$1 == "fpr" { print $10; exit }'
+)"
+[[ -n "$binary_fingerprint" && "$binary_fingerprint" == "$armored_fingerprint" ]]
+
 gpgv --keyring "${work}/pubkey.gpg" \
   "${stage}/apt/dists/stable/InRelease" >/dev/null
 gpgv --keyring "${work}/pubkey.gpg" \
@@ -66,16 +81,30 @@ if grep -Fq "$work" "${stage}/apt/dists/stable/Release"; then
   exit 1
 fi
 
-apt_state="${work}/apt-state"
-mkdir -p "${apt_state}/lists/partial"
-printf 'deb [signed-by=%s] file:%s stable main\n' \
-  "${work}/pubkey.gpg" "${stage}/apt" > "${work}/sources.list"
-apt-get \
-  -o "Dir::Etc::sourcelist=${work}/sources.list" \
-  -o 'Dir::Etc::sourceparts=-' \
-  -o "Dir::State::lists=${apt_state}/lists" \
-  -o 'APT::Get::List-Cleanup=0' \
-  update >/dev/null
+verify_apt_consumer() {
+  local extension="${1:?key extension is required}"
+  local attempt="${2:?attempt name is required}"
+  local keyring="/etc/apt/keyrings/wyrd-company.${extension}"
+  local apt_state="${work}/apt-state-${extension}-${attempt}"
+  local sources_list="${work}/sources-${extension}-${attempt}.list"
+
+  install -d -m 0755 /etc/apt/keyrings
+  cp "${stage}/pubkey.${extension}" "$keyring"
+  mkdir -p "${apt_state}/lists/partial"
+  printf 'deb [signed-by=%s] file:%s stable main\n' \
+    "$keyring" "${stage}/apt" > "$sources_list"
+  apt-get \
+    -o "Dir::Etc::sourcelist=${sources_list}" \
+    -o 'Dir::Etc::sourceparts=-' \
+    -o "Dir::State::lists=${apt_state}/lists" \
+    -o 'APT::Get::List-Cleanup=0' \
+    update >/dev/null
+}
+
+# The binary .gpg path is the immutable Wyrwood 0.1.0 documentation contract;
+# the armored .asc path is the preferred contract for current documentation.
+verify_apt_consumer gpg initial
+verify_apt_consumer asc initial
 for arch in amd64 arm64; do
   grep -Fq 'Package: sample-tool' \
     "${stage}/apt/dists/stable/main/binary-${arch}/Packages"
@@ -95,7 +124,20 @@ for arch in x86_64 aarch64; do
 done
 
 # A retry must retain the already signed RPMs rather than replacing them with
-# their unsigned release inputs.
+# their unsigned release inputs, and must not alter any immutable artifact that
+# would already have been restored from R2 after a prior partial publication.
+find "${stage}/artifacts" "${stage}/apt/pool" "${stage}/rpm" \
+  -type f \( -name '*.tar.gz' -o -name '*.deb' -o -name '*.rpm' \) \
+  -print0 | sort -z | xargs -0 sha256sum > "${work}/immutable-before"
+sha256sum "${stage}/pubkey.gpg" "${stage}/pubkey.asc" > "${work}/keys-before"
 python3 "${root}/scripts/repository.py" stage \
   "$manifest" "$artifacts" "$stage" "${work}/pubkey.gpg"
 "${root}/scripts/build-indexes.sh" "$stage"
+find "${stage}/artifacts" "${stage}/apt/pool" "${stage}/rpm" \
+  -type f \( -name '*.tar.gz' -o -name '*.deb' -o -name '*.rpm' \) \
+  -print0 | sort -z | xargs -0 sha256sum > "${work}/immutable-after"
+sha256sum "${stage}/pubkey.gpg" "${stage}/pubkey.asc" > "${work}/keys-after"
+cmp "${work}/immutable-before" "${work}/immutable-after"
+cmp "${work}/keys-before" "${work}/keys-after"
+verify_apt_consumer gpg retry
+verify_apt_consumer asc retry

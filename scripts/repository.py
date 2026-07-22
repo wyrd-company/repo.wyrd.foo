@@ -30,6 +30,7 @@ REPOSITORY = re.compile(r"wyrd-company/[a-z][a-z0-9.-]*\Z")
 COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 FILENAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]{0,254}\Z")
+MAINTAINER = re.compile(r"[^<>]+ <[^<>@ ]+@[^<>@ ]+>\Z")
 MANIFEST_PATH = re.compile(
     r"releases/[a-z][a-z0-9-]*/[0-9]+\.[0-9]+\.[0-9]+\.json\Z"
 )
@@ -60,9 +61,16 @@ def require_keys(value: dict[str, Any], expected: set[str], context: str) -> Non
 def require_text(value: Any, context: str, maximum: int) -> str:
     if not isinstance(value, str) or not value or len(value) > maximum:
         raise ManifestError(f"{context} must be non-empty text of at most {maximum} characters")
-    if any(character in value for character in "\r\n\0"):
+    if not value.isprintable():
         raise ManifestError(f"{context} contains a forbidden control character")
     return value
+
+
+def require_maintainer(value: Any) -> str:
+    maintainer = require_text(value, "package.maintainer", 256)
+    if not MAINTAINER.fullmatch(maintainer):
+        raise ManifestError("package.maintainer must have the form Name <address>")
+    return maintainer
 
 
 def load_manifest(path: Path) -> dict[str, Any]:
@@ -118,9 +126,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
     if homepage.scheme != "https" or not homepage.netloc or homepage.username or homepage.password:
         raise ManifestError("package.homepage must be an absolute HTTPS URL")
     require_text(package["license"], "package.license", 64)
-    maintainer = require_text(package["maintainer"], "package.maintainer", 256)
-    if not re.fullmatch(r"[^<>]+ <[^<>@ ]+@[^<>@ ]+>", maintainer):
-        raise ManifestError("package.maintainer must have the form Name <address>")
+    require_maintainer(package["maintainer"])
 
     publish = manifest["publish"]
     if not isinstance(publish, dict):

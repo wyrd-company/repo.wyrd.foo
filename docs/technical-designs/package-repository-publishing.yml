@@ -81,8 +81,12 @@ proposed-design:
     apt/dists/stable/main. SHA-256 by-hash copies make every indexed package list
     immutable. apt-ftparchive produces a Release document with
     Acquire-By-Hash enabled. The repository key produces both InRelease and
-    Release.gpg. The publisher uploads packages and by-hash objects before the
-    mutable package lists and publishes InRelease last.
+    Release.gpg. APT consumers store the armored public key served as
+    pubkey.asc with an .asc keyring filename so APT recognizes its format. An
+    equivalent binary OpenPGP keyring at pubkey.gpg supports consumers whose
+    signed-by path uses the .gpg format contract. Both forms have the same
+    primary fingerprint. The publisher uploads packages and by-hash objects
+    before the mutable package lists and publishes InRelease last.
   rpm-repository: >-
     Signed RPM packages are retained beneath rpm/stable/<architecture>/Packages.
     createrepo_c produces checksum-named metadata while retaining earlier
@@ -100,14 +104,19 @@ proposed-design:
     adds the new immutable package, regenerates indexes, and uploads without
     deleting historical packages or content-addressed metadata. Immutable
     objects receive a one-year immutable cache policy. Mutable package lists and
-    signed publication pointers require revalidation.
+    signed publication pointers require revalidation. Both public-key forms
+    are regenerated or staged from the configured signing identity and
+    uploaded as mutable configuration before signed publication pointers.
   aur-publication: >-
     A release manifest declares one -bin AUR package. The publisher renders a
     PKGBUILD for x86_64 and aarch64 archives served by repo.wyrd.foo, generates
     .SRCINFO with makepkg in an Arch Linux container, verifies the official AUR
-    SSH host fingerprint, and pushes through the configured AUR account. The
-    package installs the binary, declared license, and README. Replaying the
-    same manifest produces the same AUR files and no additional commit.
+    SSH host fingerprint, and pushes through the configured AUR account. Its
+    render workspace is created under the canonical GitHub runner temporary
+    directory and mounted into Docker only through an absolute read-only bind
+    path. The package installs the binary, declared license, and README.
+    Replaying the same manifest produces the same AUR files and no additional
+    commit.
   verification: >-
     Local tests validate the JSON Schema, strict semantic validation, canonical
     handoff behavior, R2 URL parsing, release URL confinement, digest checking,

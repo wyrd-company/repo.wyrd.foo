@@ -32,13 +32,25 @@ Install the repository key and source definition:
 
 ```console
 sudo install -d -m 0755 /etc/apt/keyrings
-curl -fsSL https://repo.wyrd.foo/pubkey.gpg |
-  sudo tee /etc/apt/keyrings/wyrd-company.gpg >/dev/null
-echo "deb [signed-by=/etc/apt/keyrings/wyrd-company.gpg] \
+curl -fsSL https://repo.wyrd.foo/pubkey.asc |
+  sudo tee /etc/apt/keyrings/wyrd-company.asc >/dev/null
+echo "deb [signed-by=/etc/apt/keyrings/wyrd-company.asc] \
 https://repo.wyrd.foo/apt stable main" |
   sudo tee /etc/apt/sources.list.d/wyrd-company.list >/dev/null
 sudo apt update
 sudo apt install wyrwood
+```
+
+`pubkey.asc` is the ASCII-armored consumer key. The equivalent
+`pubkey.gpg` is a binary OpenPGP keyring for consumers that use a `.gpg`
+keyring path. After a signing-key rotation, import the public key corresponding
+to `REPO_WYRD_FOO_GPG_KEY` into an isolated GnuPG home, verify its full primary
+fingerprint with the key owner, and set `SIGNING_FINGERPRINT` to that value.
+Create the reviewed armored input and checked-in binary keyring with:
+
+```console
+gpg --batch --armor --export "$SIGNING_FINGERPRINT" >pubkey.asc
+gpg --batch --yes --dearmor --output pubkey.gpg pubkey.asc
 ```
 
 ## RPM
@@ -73,8 +85,8 @@ The App can update only the `release-manifests` inbox branch under the required
 rulesets. It cannot push or bypass protection on `main`. Product workflows
 provide:
 
-- `REPO_WYRD_FOO_APP_CLIENT_ID`
-- `REPO_WYRD_FOO_APP_PRIVATE_KEY`
+- `REPO_WYRD_FOO_PUBLISHER_APP_ID`
+- `REPO_WYRD_FOO_PUBLISHER_PRIVATE_KEY`
 
 This repository's publisher uses:
 

@@ -7,18 +7,43 @@
 set -euo pipefail
 
 manifest="${1:?manifest path is required}"
-work_root="${2:?work directory is required}"
 : "${AUR_ACCOUNT:?AUR_ACCOUNT is required}"
 : "${AUR_PRIVATE_KEY:?AUR_PRIVATE_KEY is required}"
+: "${RUNNER_TEMP:?RUNNER_TEMP must identify the GitHub runner temporary directory}"
+
+if [[ "$RUNNER_TEMP" != /* || "$RUNNER_TEMP" == / || ! -d "$RUNNER_TEMP" ]]; then
+  echo 'RUNNER_TEMP must be an existing absolute directory other than root.' >&2
+  exit 1
+fi
+runner_temp="$(realpath -e -- "$RUNNER_TEMP")"
+if [[ "$runner_temp" == / || "$runner_temp" == *','* || "$runner_temp" == *$'\n'* ]]; then
+  echo 'The canonical RUNNER_TEMP cannot be root or contain commas or newlines.' >&2
+  exit 1
+fi
+work_root="$(mktemp -d "${runner_temp}/repo-wyrd-foo-aur.XXXXXX")"
+work_root="$(realpath -e -- "$work_root")"
+case "$work_root" in
+  "${runner_temp}"/repo-wyrd-foo-aur.*) ;;
+  *)
+    echo 'The AUR work directory escaped RUNNER_TEMP.' >&2
+    exit 1
+    ;;
+esac
+trap 'rm -rf -- "$work_root"' EXIT
 
 package="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["publish"]["aur"]["package"])' "$manifest")"
 version="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$manifest")"
 rendered="${work_root}/rendered"
 mkdir -p "$rendered"
+rendered="$(realpath -e -- "$rendered")"
+if [[ "$rendered" != "${work_root}/rendered" || "$rendered" != /* ]]; then
+  echo 'The rendered AUR directory escaped its work directory.' >&2
+  exit 1
+fi
 python3 scripts/repository.py render-aur "$manifest" "$rendered"
 
 aur_build_image='archlinux@sha256:412efebb0eeef0ef322ff24ad73f82b1ba2d3b12377db4c5fbe3074c7e7e8678'
-docker run --rm --volume "${rendered}:/source:ro" "$aur_build_image" \
+docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_build_image" \
   bash -euc 'useradd --create-home builder; cp -R /source/. /home/builder/package; chown -R builder:builder /home/builder/package; su builder -c "cd /home/builder/package && makepkg --printsrcinfo"' \
   > "${rendered}/.SRCINFO"
 
@@ -26,7 +51,6 @@ ssh_root="${work_root}/ssh"
 mkdir -p "$ssh_root"
 private_key="${ssh_root}/aur"
 known_hosts="${ssh_root}/known_hosts"
-trap 'rm -f "$private_key"' EXIT
 printf '%s' "$AUR_PRIVATE_KEY" > "$private_key"
 chmod 0600 "$private_key"
 ssh-keyscan -t ed25519 aur.archlinux.org > "$known_hosts" 2>/dev/null
