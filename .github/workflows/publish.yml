@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: wyrd-company/repo.wyrd.foo
-          ref: 26de4d42cf6f51dbd86316b2a82537b330a26209 # PUBLISHER_CODE_SHA_SENTINEL
+          ref: 0e0d0e934e1a0f6f34550ed9ee28717623614b8c # PUBLISHER_CODE_SHA_SENTINEL
           path: publisher
           persist-credentials: false
 
@@ -67,7 +67,9 @@ jobs:
           queue "$INBOX_COMMIT" "$MANIFEST_PATH" publisher/config/products.json
 
       - name: Install repository tooling
+        shell: bash
         run: |
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install --yes \
           apt-utils ca-certificates createrepo-c curl dpkg-dev gnupg rpm unzip

@@ -24,6 +24,11 @@ tasks:
     cmds:
       - tests/run-integration.sh
 
+  aws-cli:smoke:
+    desc: Install the pinned AWS CLI twice in one runner directory
+    cmds:
+      - tests/smoke-install-aws-cli.sh
+
   schema:check:
     desc: Validate checked-in release manifest fixtures
     cmds:

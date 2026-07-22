@@ -42,6 +42,7 @@ curl \
   --fail \
   --location \
   --proto '=https' \
+  --proto-redir '=https' \
   --retry 3 \
   --show-error \
   --silent \
@@ -51,7 +52,7 @@ curl \
 
 printf '%s  %s\n' "$aws_cli_sha256" "${work_dir}/awscliv2.zip" | sha256sum --check --status
 unzip -q "${work_dir}/awscliv2.zip" -d "$work_dir"
-"${work_dir}/aws/install" --install-dir "$install_dir" --bin-dir "$bin_dir"
+"${work_dir}/aws/install" --update --install-dir "$install_dir" --bin-dir "$bin_dir"
 
 aws_cli_version="$("${bin_dir}/aws" --version 2>&1)"
 case "$aws_cli_version" in

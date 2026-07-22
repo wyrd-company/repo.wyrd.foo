@@ -57,6 +57,8 @@ class WorkflowContractTests(unittest.TestCase):
         assert install_step is not None
         self.assertNotRegex(install_step["body"], r"\bawscli\b")
         self.assertIn("publisher/scripts/install-aws-cli.sh", install_step["body"])
+        self.assertIn("shell: bash", install_step["body"])
+        self.assertIn("set -euo pipefail", install_step["body"])
         self.assertIn("runs-on: ubuntu-24.04", WORKFLOW)
 
     def test_aws_cli_installer_is_version_and_digest_pinned(self) -> None:
@@ -69,6 +71,9 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("sha256sum --check --status", AWS_CLI_INSTALLER)
         self.assertIn('"aws-cli/${AWS_CLI_VERSION} "*', AWS_CLI_INSTALLER)
         self.assertNotIn("awscli-exe-linux-${aws_cli_arch}.zip", AWS_CLI_INSTALLER)
+        self.assertIn("--proto '=https'", AWS_CLI_INSTALLER)
+        self.assertIn("--proto-redir '=https'", AWS_CLI_INSTALLER)
+        self.assertIn('"${work_dir}/aws/install" --update', AWS_CLI_INSTALLER)
 
 
 if __name__ == "__main__":
