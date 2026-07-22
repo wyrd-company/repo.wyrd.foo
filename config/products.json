@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "x-relationships": {
+    "implements": ["package-repository-publishing"]
+  },
+  "products": {
+    "wyrwood": {
+      "source_repository": "wyrd-company/wyrwood",
+      "package": {
+        "name": "wyrwood",
+        "binary": "wyrwood",
+        "description": "Filtered SSH-agent endpoints for containers",
+        "homepage": "https://github.com/wyrd-company/wyrwood",
+        "license": "Apache-2.0",
+        "maintainer": "Wyrd Company <support@wyrd.company>"
+      },
+      "publish": {
+        "apt": {
+          "suite": "stable",
+          "component": "main"
+        },
+        "rpm": {
+          "channel": "stable"
+        },
+        "aur": {
+          "package": "wyrwood-bin"
+        }
+      }
+    }
+  }
+}

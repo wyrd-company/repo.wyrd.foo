@@ -1,0 +1,10 @@
+# ---
+# relationships:
+#   implements: package-repository-publishing
+# ---
+
+.tmp/
+artifacts/
+public/
+__pycache__/
+*.pyc

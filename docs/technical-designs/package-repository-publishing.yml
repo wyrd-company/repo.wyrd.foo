@@ -1,0 +1,123 @@
+$schema: https://refinery.systems/ontology/technical-design
+relationships:
+  references:
+    - use-release-manifest-handoffs
+objective: >-
+  Publish authenticated APT, RPM, and Arch Linux package metadata for Wyrd
+  Company products from immutable product release artifacts.
+background:
+  current-design: >-
+    Product repositories publish versioned GitHub Release artifacts. The public
+    repo.wyrd.foo repository owns the signing key, Cloudflare R2 credentials,
+    and AUR credentials used to publish Linux package indexes.
+  problems:
+    - >-
+      Product repositories require one bounded handoff that cannot grant them
+      repository signing or storage credentials.
+    - >-
+      APT and RPM clients must never accept an artifact whose digest is not
+      bound to an authenticated repository index.
+    - Concurrent product releases must not overwrite another product's release declaration.
+    - Object storage cannot atomically replace a complete multi-file package repository.
+design-challenges:
+  credential-boundary: >-
+    Product workflows need write access to one release declaration without
+    receiving the signing, R2, or AUR credentials held by the publisher.
+  immutable-input: >-
+    The publisher must bind each package to one public source repository,
+    release tag, source commit, filename, URL, architecture, and digest before
+    it uses privileged credentials.
+  publication-order: >-
+    APT and RPM repositories use several metadata objects while R2 replaces one
+    object at a time. Clients need a stable content-addressed path until the
+    final signed publication pointer changes.
+  retry-safety: >-
+    A failed R2 or AUR operation must be safely repeatable from the same
+    immutable release manifest.
+proposed-design:
+  high-level-overview: >-
+    A product release publishes Linux archives and DEB and RPM packages as
+    immutable GitHub Release assets. The narrowly installed
+    repo-wyrd-foo-publisher GitHub App commits a canonical JSON release manifest
+    to the release-manifests inbox branch and dispatches its exact commit and
+    path. The main-branch workflow checks out publisher code at an immutable
+    reviewed commit and the inbox commit into a separate untrusted-data tree.
+    It validates the commit and publisher-owned product allowlist before
+    importing secrets, then verifies every SHA-256 digest, rebuilds signed APT
+    and RPM metadata, publishes pointers last, and updates the AUR package.
+  release-manifest: >-
+    Schema version 1 is closed JSON. It records the product and package names,
+    stable semantic version and identical bare Git tag, source repository and
+    forty-character commit, public product metadata, publication targets, and
+    one artifact record for every archive or native package. Artifact records
+    contain a basename, public GitHub Release URL, lowercase SHA-256 digest,
+    format, Linux operating system, and normalized amd64 or arm64 architecture.
+    The publisher accepts release URLs only from public repositories in the
+    wyrd-company organization and requires their repository, tag, and filename
+    path segments to agree with the manifest. A release path is immutable: an
+    identical resubmission is a no-op and different content is rejected.
+  github-app-handoff: >-
+    Product workflows mint an installation token with
+    actions/create-github-app-token. The installation is scoped to
+    wyrd-company/repo.wyrd.foo and requests only Contents write permission. The
+    App has no main bypass. The shared action validates and canonicalizes the
+    manifest, commits only to the pre-existing release-manifests inbox, resolves
+    the commit that added it, and repository-dispatches that exact commit and
+    path. An unchanged submission dispatches the original addition for recovery.
+    Checkouts never persist the token, which expires after the job.
+  trust-boundary: >-
+    The publisher accepts an inbox commit only when it is reachable from
+    release-manifests, has exactly one parent, and adds exactly one regular,
+    canonical manifest at the requested product/version path. It never executes
+    inbox content. The publisher-owned allowlist binds each product to its source
+    repository, package identity and metadata, APT/RPM targets, and AUR package.
+    The declared public Git tag must resolve to source.commit before any secret
+    is imported. Separate baseline branch-safety and branch-specific rulesets
+    prevent force pushes and deletion while narrowing each bypass; main requires
+    reviewed changes and never grants the product App a bypass.
+  apt-repository: >-
+    DEB packages are retained beneath apt/pool. Each supported architecture has
+    Packages and deterministic Packages.gz indexes beneath
+    apt/dists/stable/main. SHA-256 by-hash copies make every indexed package list
+    immutable. apt-ftparchive produces a Release document with
+    Acquire-By-Hash enabled. The repository key produces both InRelease and
+    Release.gpg. The publisher uploads packages and by-hash objects before the
+    mutable package lists and publishes InRelease last.
+  rpm-repository: >-
+    Signed RPM packages are retained beneath rpm/stable/<architecture>/Packages.
+    createrepo_c produces checksum-named metadata while retaining earlier
+    metadata. The repository key signs repodata/repomd.xml. The publisher
+    uploads packages and checksum-named metadata first, the detached signature
+    second, and repomd.xml last. The generated wyrd.repo enables package and
+    repository signature verification with the public key served at the
+    repository root.
+  r2-publication: >-
+    REPO_WYRD_FOO_S3_API is parsed as one HTTPS R2 account endpoint plus one
+    bucket path. AWS-compatible credentials remain environment-only. The
+    workflow downloads the existing repository, adds the new immutable package,
+    regenerates indexes, and uploads without deleting historical packages or
+    content-addressed metadata. Immutable objects receive a one-year immutable
+    cache policy. Mutable package lists and signed publication pointers require
+    revalidation.
+  aur-publication: >-
+    A release manifest declares one -bin AUR package. The publisher renders a
+    PKGBUILD for x86_64 and aarch64 archives served by repo.wyrd.foo, generates
+    .SRCINFO with makepkg in an Arch Linux container, verifies the official AUR
+    SSH host fingerprint, and pushes through the configured AUR account. The
+    package installs the binary, declared license, and README. Replaying the
+    same manifest produces the same AUR files and no additional commit.
+  verification: >-
+    Local tests validate the JSON Schema, strict semantic validation, canonical
+    handoff behavior, R2 URL parsing, release URL confinement, digest checking,
+    and deterministic AUR rendering. A container integration gate runs pinned
+    GoReleaser and nFPM to build the six release artifacts, verifies native
+    package metadata, rebuilds both indexes, checks signatures with the public
+    key, and validates the rendered AUR metadata with makepkg. pkgrel remains 1
+    because published versions are immutable; metadata corrections require a
+    new upstream version.
+  download-redirects: >-
+    The publisher permits GitHub's redirect chain because the initial URL is
+    confined to the allowlisted repository, exact tag, and artifact filename,
+    the final URL remains on GitHub HTTPS infrastructure, and SHA-256 binds the
+    downloaded bytes. Intermediate redirect hosts are transport, not trust
+    anchors.

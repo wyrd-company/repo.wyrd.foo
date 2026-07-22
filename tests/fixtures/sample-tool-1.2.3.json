@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "product": "sample-tool",
+  "version": "1.2.3",
+  "tag": "1.2.3",
+  "source": {
+    "repository": "wyrd-company/sample-tool",
+    "commit": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "package": {
+    "name": "sample-tool",
+    "binary": "sample-tool",
+    "description": "Example command-line utility",
+    "homepage": "https://github.com/wyrd-company/sample-tool",
+    "license": "Apache-2.0",
+    "maintainer": "Package Maintainers <packages@example.invalid>"
+  },
+  "publish": {
+    "apt": { "suite": "stable", "component": "main" },
+    "rpm": { "channel": "stable" },
+    "aur": { "package": "sample-tool-bin" }
+  },
+  "artifacts": [
+    {
+      "kind": "archive",
+      "format": "tar.gz",
+      "os": "linux",
+      "arch": "amd64",
+      "filename": "sample-tool_1.2.3_linux_x86_64.tar.gz",
+      "url": "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_x86_64.tar.gz",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "kind": "archive",
+      "format": "tar.gz",
+      "os": "linux",
+      "arch": "arm64",
+      "filename": "sample-tool_1.2.3_linux_aarch64.tar.gz",
+      "url": "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_aarch64.tar.gz",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "kind": "package",
+      "format": "deb",
+      "os": "linux",
+      "arch": "amd64",
+      "filename": "sample-tool_1.2.3_linux_x86_64.deb",
+      "url": "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_x86_64.deb",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "kind": "package",
+      "format": "deb",
+      "os": "linux",
+      "arch": "arm64",
+      "filename": "sample-tool_1.2.3_linux_aarch64.deb",
+      "url": "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_aarch64.deb",
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "kind": "package",
+      "format": "rpm",
+      "os": "linux",
+      "arch": "amd64",
+      "filename": "sample-tool_1.2.3_linux_x86_64.rpm",
+      "url": "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_x86_64.rpm",
+      "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    {
+      "kind": "package",
+      "format": "rpm",
+      "os": "linux",
+      "arch": "arm64",
+      "filename": "sample-tool_1.2.3_linux_aarch64.rpm",
+      "url": "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_aarch64.rpm",
+      "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+    }
+  ]
+}

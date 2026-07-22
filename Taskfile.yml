@@ -1,0 +1,56 @@
+# ---
+# relationships:
+#   implements: package-repository-publishing
+# ---
+
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  test:
+    desc: Run repository publisher tests
+    cmds:
+      - python3 -m unittest discover -s tests -v
+
+  integration:
+    desc: Build and verify signed APT, RPM, and AUR fixture outputs
+    cmds:
+      - tests/run-integration.sh
+
+  schema:check:
+    desc: Validate checked-in release manifest fixtures
+    cmds:
+      - python3 tests/validate_schema.py
+
+  scripts:check:
+    desc: Check publisher shell scripts
+    cmds:
+      - shellcheck scripts/*.sh tests/*.sh
+
+  actions:check:
+    desc: Parse GitHub Actions and Task configuration
+    cmds:
+      - ryl check .github Taskfile.yml
+
+  docs:check:
+    desc: Lint Markdown and structured documentation
+    cmds:
+      - rumdl check .
+      - ryl check docs
+
+  check:
+    desc: Run all local repository checks
+    deps:
+      - actions:check
+      - docs:check
+      - schema:check
+      - scripts:check
+      - test
+      - integration

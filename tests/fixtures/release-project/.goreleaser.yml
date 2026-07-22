@@ -1,0 +1,55 @@
+# ---
+# relationships:
+#   verifies: package-repository-publishing
+# ---
+
+version: 2
+project_name: sample-tool
+
+snapshot:
+  version_template: "1.2.3"
+
+builds:
+  - id: sample-tool
+    main: .
+    binary: sample-tool
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: archives
+    ids:
+      - sample-tool
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ if eq .Arch "amd64" }}x86_64{{ else }}aarch64{{ end }}
+    files:
+      - LICENSE
+      - README.md
+
+nfpms:
+  - id: packages
+    ids:
+      - sample-tool
+    package_name: sample-tool
+    file_name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ if eq .Arch "amd64" }}x86_64{{ else }}aarch64{{ end }}
+    vendor: Package Test
+    homepage: https://example.invalid
+    maintainer: Package Maintainers <packages@example.invalid>
+    description: Example command-line utility
+    license: Apache-2.0
+    formats:
+      - deb
+      - rpm
+    contents:
+      - src: LICENSE
+        dst: /usr/share/licenses/sample-tool/LICENSE
+      - src: README.md
+        dst: /usr/share/doc/sample-tool/README.md

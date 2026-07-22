@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo.wyrd.foo/schemas/release-manifest.schema.json",
+  "title": "Wyrd Company package release manifest",
+  "description": "Immutable handoff from a product release to the Linux package publisher.",
+  "x-relationships": {
+    "implements": ["package-repository-publishing"]
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "product", "version", "tag", "source", "package", "publish", "artifacts"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "product": { "$ref": "#/$defs/slug" },
+    "version": { "$ref": "#/$defs/version" },
+    "tag": { "$ref": "#/$defs/version" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^wyrd-company/[a-z][a-z0-9.-]*$"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "binary", "description", "homepage", "license", "maintainer"],
+      "properties": {
+        "name": { "$ref": "#/$defs/slug" },
+        "binary": { "$ref": "#/$defs/slug" },
+        "description": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "homepage": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "license": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "maintainer": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 256,
+          "pattern": "^[^<>]+ <[^<>@ ]+@[^<>@ ]+>$"
+        }
+      }
+    },
+    "publish": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["apt", "rpm", "aur"],
+      "properties": {
+        "apt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["suite", "component"],
+          "properties": {
+            "suite": { "const": "stable" },
+            "component": { "const": "main" }
+          }
+        },
+        "rpm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["channel"],
+          "properties": {
+            "channel": { "const": "stable" }
+          }
+        },
+        "aur": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["package"],
+          "properties": {
+            "package": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*-bin$"
+            }
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "format", "os", "arch", "filename", "url", "sha256"],
+        "properties": {
+          "kind": { "enum": ["archive", "package"] },
+          "format": { "enum": ["tar.gz", "deb", "rpm"] },
+          "os": { "const": "linux" },
+          "arch": { "enum": ["amd64", "arm64"] },
+          "filename": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+          },
+          "url": { "type": "string", "format": "uri", "pattern": "^https://github\\.com/" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "maxLength": 64
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    }
+  }
+}

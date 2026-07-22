@@ -1,0 +1,32 @@
+$schema: https://refinery.systems/ontology/decision-record
+relationships:
+  contextualizes:
+    - package-repository-publishing
+description: >-
+  Product repositories need to trigger the central Linux package publisher
+  without receiving repository signing, object-storage, or AUR credentials.
+  The cross-repository handoff also needs an auditable immutable binding between
+  a product release and the packages selected for publication.
+considered-options:
+  1: Commit DEB, RPM, and archive binaries directly to repo.wyrd.foo.
+  2: Give every product repository the signing, R2, and AUR credentials and publish directly.
+  3: Commit a digest-bound release manifest through a narrowly scoped GitHub App.
+decision-outcome:
+  chosen-option: 3
+  justification: >-
+    An immutable manifest makes Git the auditable publication queue while the
+    binaries remain in GitHub Releases. The GitHub App writes only an inbox
+    branch and cannot bypass main protection. The publisher runs immutable,
+    reviewed code, treats the inbox as data, and binds declarations to its own
+    product allowlist and the resolved source tag before using credentials.
+expected-outcomes:
+  positive:
+    - Product repositories share one versioned publication contract.
+    - Binary history does not permanently enlarge the Git repository.
+    - Signing, storage, and AUR credentials remain isolated in repo.wyrd.foo.
+    - A publication can be retried from one immutable manifest.
+  negative:
+    - Product release workflows depend on the shared manifest schema and submission action.
+    - >-
+      The GitHub App installation and product-repository secrets become
+      required release infrastructure.

@@ -1,0 +1,6 @@
+# ---
+# relationships:
+#   verifies: package-repository-publishing
+# ---
+
+Test fixture license content.

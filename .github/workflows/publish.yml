@@ -1,0 +1,113 @@
+# ---
+# relationships:
+#   implements: package-repository-publishing
+# ---
+
+name: Publish package repositories
+
+on:
+  repository_dispatch:
+    types:
+      - release-manifest
+  workflow_dispatch:
+    inputs:
+      inbox_commit:
+        description: Full commit SHA on the release-manifests inbox branch
+        required: true
+        type: string
+      manifest:
+        description: Exact release manifest path to republish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-repository-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      AWS_DEFAULT_REGION: auto
+      AWS_EC2_METADATA_DISABLED: "true"
+      INBOX_COMMIT: ${{ github.event.client_payload.commit || inputs.inbox_commit }}
+      MANIFEST_PATH: ${{ github.event.client_payload.path || inputs.manifest }}
+    steps:
+      - name: Reject malformed publication requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$INBOX_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$MANIFEST_PATH" =~ ^releases/[a-z][a-z0-9-]*/[0-9]+\.[0-9]+\.[0-9]+\.json$ ]]
+
+      - name: Check out immutable publisher code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: wyrd-company/repo.wyrd.foo
+          ref: 0000000000000000000000000000000000000000 # PUBLISHER_CODE_SHA_SENTINEL
+          path: publisher
+          persist-credentials: false
+
+      - name: Check out exact inbox commit as untrusted data
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: wyrd-company/repo.wyrd.foo
+          ref: ${{ env.INBOX_COMMIT }}
+          fetch-depth: 0
+          path: queue
+          persist-credentials: false
+
+      - name: Validate queue commit, allowlist, and source tag
+        run: >-
+          python3 publisher/scripts/repository.py validate-queue
+          queue "$INBOX_COMMIT" "$MANIFEST_PATH" publisher/config/products.json
+
+      - name: Install repository tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes apt-utils awscli createrepo-c dpkg-dev gnupg rpm
+
+      - name: Validate privileged configuration
+        working-directory: publisher
+        env:
+          REPO_WYRD_FOO_GPG_KEY: ${{ secrets.REPO_WYRD_FOO_GPG_KEY }}
+          REPO_WYRD_FOO_S3_API: ${{ secrets.REPO_WYRD_FOO_S3_API }}
+        run: |
+          set -euo pipefail
+          python3 scripts/repository.py configure-r2 --github-env "$GITHUB_ENV"
+          scripts/import-signing-key.sh pubkey.gpg
+
+      - name: Restore published repository
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.REPO_WYRD_FOO_S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.REPO_WYRD_FOO_S3_SECRET }}
+        run: |
+          set -euo pipefail
+          mkdir -p public artifacts
+          aws s3 sync "s3://${R2_BUCKET}" public --endpoint-url "$R2_ENDPOINT" --only-show-errors
+
+      - name: Verify and stage release artifacts
+        run: |
+          set -euo pipefail
+          MANIFEST_FILE="queue/${MANIFEST_PATH}"
+          REPOSITORY_TOOL=publisher/scripts/repository.py
+          python3 "$REPOSITORY_TOOL" download "$MANIFEST_FILE" artifacts
+          python3 "$REPOSITORY_TOOL" stage "$MANIFEST_FILE" artifacts public publisher/pubkey.gpg
+          publisher/scripts/build-indexes.sh public
+
+      - name: Publish APT and RPM repositories
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.REPO_WYRD_FOO_S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.REPO_WYRD_FOO_S3_SECRET }}
+        run: publisher/scripts/publish-r2.sh public
+
+      - name: Publish AUR package
+        working-directory: publisher
+        env:
+          AUR_ACCOUNT: ${{ secrets.AUR_ACCOUNT }}
+          AUR_PRIVATE_KEY: ${{ secrets.AUR_PRIVATE_KEY }}
+        run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}" ../.tmp/aur
