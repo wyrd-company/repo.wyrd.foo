@@ -89,6 +89,12 @@ This repository's publisher uses:
 `https://<account>.r2.cloudflarestorage.com/<bucket>`. The workflow derives the
 S3 endpoint and bucket without logging the configured URL.
 
+The publisher installs AWS CLI v2 from an exact official Linux bundle rather
+than relying on Ubuntu's optional `awscli` package. The installer version and
+SHA-256 digest are pinned for each supported runner architecture. When updating
+the pin, verify both bundles against the AWS CLI Team signing key before
+recording their new digests.
+
 ## Required repository rulesets
 
 Create `release-manifests` from an existing commit before distributing App

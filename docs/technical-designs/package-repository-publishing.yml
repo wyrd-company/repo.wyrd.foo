@@ -93,12 +93,14 @@ proposed-design:
     repository root.
   r2-publication: >-
     REPO_WYRD_FOO_S3_API is parsed as one HTTPS R2 account endpoint plus one
-    bucket path. AWS-compatible credentials remain environment-only. The
-    workflow downloads the existing repository, adds the new immutable package,
-    regenerates indexes, and uploads without deleting historical packages or
-    content-addressed metadata. Immutable objects receive a one-year immutable
-    cache policy. Mutable package lists and signed publication pointers require
-    revalidation.
+    bucket path. AWS-compatible credentials remain environment-only. The workflow
+    installs an exact AWS CLI v2 bundle from AWS after verifying its pinned
+    architecture-specific SHA-256 digest; it does not depend on a distribution's
+    optional AWS CLI package. The workflow downloads the existing repository,
+    adds the new immutable package, regenerates indexes, and uploads without
+    deleting historical packages or content-addressed metadata. Immutable
+    objects receive a one-year immutable cache policy. Mutable package lists and
+    signed publication pointers require revalidation.
   aur-publication: >-
     A release manifest declares one -bin AUR package. The publisher renders a
     PKGBUILD for x86_64 and aarch64 archives served by repo.wyrd.foo, generates
