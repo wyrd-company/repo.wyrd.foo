@@ -200,6 +200,15 @@ class ManifestTests(unittest.TestCase):
             self.assertIn("pkgname='sample-tool-bin'", pkgbuild)
             self.assertIn("pkgver='1.2.3'", pkgbuild)
             self.assertIn("arch=('x86_64' 'aarch64')", pkgbuild)
+            self.assertIn(
+                'source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::',
+                pkgbuild,
+            )
+            self.assertIn(
+                'source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::',
+                pkgbuild,
+            )
+            self.assertNotIn("${CARCH}", pkgbuild)
             self.assertIn("https://repo.wyrd.foo/artifacts/sample-tool/1.2.3/", pkgbuild)
             self.assertIn("sha256sums_x86_64=('111111", pkgbuild)
             self.assertIn("/usr/share/licenses/${pkgname}/LICENSE", pkgbuild)

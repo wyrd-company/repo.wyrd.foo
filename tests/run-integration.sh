@@ -44,9 +44,31 @@ docker build --quiet --network host \
 docker run --rm --volume "${root}:/repo:ro" \
   --volume "${release_project}/dist:/goreleaser-dist:ro" "$integration_image"
 
+aur_manifest="${work}/aur-manifest.json"
+python3 - \
+  "${root}/tests/fixtures/sample-tool-1.2.3.json" \
+  "${release_project}/dist" \
+  "$aur_manifest" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+
+source, artifacts, destination = map(pathlib.Path, sys.argv[1:])
+manifest = json.loads(source.read_text(encoding="utf-8"))
+for artifact in manifest["artifacts"]:
+    if artifact["format"] == "tar.gz":
+        artifact["sha256"] = hashlib.sha256(
+            (artifacts / artifact["filename"]).read_bytes()
+        ).hexdigest()
+destination.write_text(json.dumps(manifest), encoding="utf-8")
+PY
+
 rendered="${work}/rendered package"
 python3 "${root}/scripts/repository.py" render-aur \
-  "${root}/tests/fixtures/sample-tool-1.2.3.json" "$rendered"
+  "$aur_manifest" "$rendered"
+cp "${release_project}/dist/sample-tool_1.2.3_linux_x86_64.tar.gz" \
+  "${rendered}/sample-tool-bin-1.2.3-x86_64.tar.gz"
 aur_build_image='archlinux@sha256:412efebb0eeef0ef322ff24ad73f82b1ba2d3b12377db4c5fbe3074c7e7e8678'
 docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_build_image" \
   bash -euc '
@@ -62,3 +84,15 @@ docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_b
 grep -Fxq 'pkgbase = sample-tool-bin' "${work}/SRCINFO"
 grep -Fxq 'pkgname = sample-tool-bin' "${work}/SRCINFO"
 grep -Fq 'source_x86_64 = sample-tool-bin-1.2.3-x86_64.tar.gz::https://repo.wyrd.foo/artifacts/sample-tool/1.2.3/sample-tool_1.2.3_linux_x86_64.tar.gz' "${work}/SRCINFO"
+grep -Fq 'source_aarch64 = sample-tool-bin-1.2.3-aarch64.tar.gz::https://repo.wyrd.foo/artifacts/sample-tool/1.2.3/sample-tool_1.2.3_linux_aarch64.tar.gz' "${work}/SRCINFO"
+
+docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_build_image" \
+  bash -euc '
+    useradd --create-home builder
+    cp -R /source/. /home/builder/package
+    chown -R builder:builder /home/builder/package
+    su builder -c "cd /home/builder/package && makepkg --nodeps --noconfirm"
+    package_file="$(find /home/builder/package -maxdepth 1 -type f -name "sample-tool-bin-1.2.3-1-x86_64.pkg.tar.*" -print -quit)"
+    [[ -n "$package_file" ]]
+    bsdtar -tf "$package_file" | grep -Fxq "usr/bin/sample-tool"
+  '
