@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: wyrd-company/repo.wyrd.foo
-          ref: 874da808d93aab79f3ad7a4cf6597dedf55d85f2 # PUBLISHER_CODE_SHA_SENTINEL
+          ref: 806d937650a8fb1970f79f69b585cffc74ec4a50 # PUBLISHER_CODE_SHA_SENTINEL
           path: publisher
           persist-credentials: false
 
