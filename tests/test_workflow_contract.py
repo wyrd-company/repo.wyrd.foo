@@ -21,6 +21,7 @@ WORKFLOW = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="
 COMMIT_SCRIPT = (ROOT / "scripts" / "commit-release.sh").read_text(encoding="utf-8")
 AWS_CLI_INSTALLER = (ROOT / "scripts" / "install-aws-cli.sh").read_text(encoding="utf-8")
 AUR_PUBLISHER = (ROOT / "scripts" / "publish-aur.sh").read_text(encoding="utf-8")
+AUR_KEY_PREPARER = ROOT / "scripts" / "prepare-ssh-private-key.py"
 README = (ROOT / "README.md").read_text(encoding="utf-8")
 R2_PUBLISHER = (ROOT / "scripts" / "publish-r2.sh").read_text(encoding="utf-8")
 PUBLIC_KEY = ROOT / "pubkey.gpg"
@@ -167,6 +168,133 @@ exit 0
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("existing absolute directory", result.stderr)
+
+    def test_aur_private_key_normalizes_common_secret_line_endings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            subprocess.run(
+                ["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(source)],
+                check=True,
+            )
+            canonical = source.read_bytes()
+            variants = {
+                "without-newline": canonical.rstrip(b"\n"),
+                "crlf": canonical.replace(b"\n", b"\r\n"),
+                "bare-cr": canonical.replace(b"\n", b"\r"),
+                "extra-newlines": canonical.rstrip(b"\n") + b"\n\n\n",
+            }
+
+            for name, key_material in variants.items():
+                with self.subTest(name=name):
+                    prepared = root / name
+                    subprocess.run(
+                        ["python3", str(AUR_KEY_PREPARER), str(prepared)],
+                        input=key_material,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        check=True,
+                    )
+                    self.assertEqual(prepared.read_bytes(), canonical)
+                    self.assertEqual(prepared.stat().st_mode & 0o777, 0o600)
+                    subprocess.run(
+                        ["ssh-keygen", "-y", "-P", "", "-f", str(prepared)],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.PIPE,
+                        check=True,
+                    )
+
+    def test_aur_private_key_file_errors_are_generic_and_non_destructive(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "existing-key"
+            destination.write_bytes(b"existing-content")
+            secret = b"not-a-private-key-secret-sentinel"
+            result = subprocess.run(
+                ["python3", str(AUR_KEY_PREPARER), str(destination)],
+                input=secret,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, b"")
+            self.assertEqual(result.stderr, b"Unable to prepare AUR private key file.\n")
+            self.assertNotIn(secret, result.stderr)
+            self.assertNotIn(b"Traceback", result.stderr)
+            self.assertEqual(destination.read_bytes(), b"existing-content")
+
+            missing_parent = Path(directory) / "missing" / "key"
+            missing_result = subprocess.run(
+                ["python3", str(AUR_KEY_PREPARER), str(missing_parent)],
+                input=secret,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(missing_result.returncode, 0)
+            self.assertEqual(missing_result.stdout, b"")
+            self.assertEqual(
+                missing_result.stderr,
+                b"Unable to prepare AUR private key file.\n",
+            )
+            self.assertNotIn(secret, missing_result.stderr)
+            self.assertNotIn(b"Traceback", missing_result.stderr)
+
+    def test_aur_private_key_fails_before_container_or_network_access(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runner_temp = root / "runner-temp"
+            fake_bin = root / "fake-bin"
+            runner_temp.mkdir()
+            fake_bin.mkdir()
+            external_marker = root / "external-accessed"
+
+            commands = {
+                "docker": """#!/usr/bin/env bash
+printf 'called\\n' > "$EXTERNAL_MARKER"
+exit 1
+""",
+                "ssh-keygen": """#!/usr/bin/env bash
+exit 255
+""",
+                "ssh-keyscan": """#!/usr/bin/env bash
+printf 'called\\n' > "$EXTERNAL_MARKER"
+exit 1
+""",
+                "git": """#!/usr/bin/env bash
+printf 'called\\n' > "$EXTERNAL_MARKER"
+exit 1
+""",
+            }
+            for name, content in commands.items():
+                command = fake_bin / name
+                command.write_text(content, encoding="utf-8")
+                command.chmod(0o755)
+
+            secret = "not-a-private-key-secret-sentinel"
+            environment = os.environ | {
+                "PATH": f"{fake_bin}:{os.environ['PATH']}",
+                "RUNNER_TEMP": str(runner_temp),
+                "AUR_ACCOUNT": "package-publisher",
+                "AUR_PRIVATE_KEY": secret,
+                "EXTERNAL_MARKER": str(external_marker),
+            }
+            result = subprocess.run(
+                [
+                    str(ROOT / "scripts" / "publish-aur.sh"),
+                    str(ROOT / "tests" / "fixtures" / "sample-tool-1.2.3.json"),
+                ],
+                cwd=ROOT,
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("invalid or encrypted", result.stderr)
+            self.assertNotIn(secret, result.stdout + result.stderr)
+            self.assertFalse(external_marker.exists())
 
     def test_documented_apt_key_uses_its_armored_extension(self) -> None:
         self.assertIn("https://repo.wyrd.foo/pubkey.asc", README)

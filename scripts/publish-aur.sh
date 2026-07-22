@@ -31,6 +31,16 @@ case "$work_root" in
 esac
 trap 'rm -rf -- "$work_root"' EXIT
 
+ssh_root="${work_root}/ssh"
+mkdir -p "$ssh_root"
+private_key="${ssh_root}/aur"
+known_hosts="${ssh_root}/known_hosts"
+printf '%s' "$AUR_PRIVATE_KEY" | python3 scripts/prepare-ssh-private-key.py "$private_key"
+if ! ssh-keygen -y -P '' -f "$private_key" >/dev/null 2>&1; then
+  echo 'AUR private key is invalid or encrypted after line-ending normalization.' >&2
+  exit 1
+fi
+
 package="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["publish"]["aur"]["package"])' "$manifest")"
 version="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$manifest")"
 rendered="${work_root}/rendered"
@@ -47,12 +57,6 @@ docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_b
   bash -euc 'useradd --create-home builder; cp -R /source/. /home/builder/package; chown -R builder:builder /home/builder/package; su builder -c "cd /home/builder/package && makepkg --printsrcinfo"' \
   > "${rendered}/.SRCINFO"
 
-ssh_root="${work_root}/ssh"
-mkdir -p "$ssh_root"
-private_key="${ssh_root}/aur"
-known_hosts="${ssh_root}/known_hosts"
-printf '%s' "$AUR_PRIVATE_KEY" > "$private_key"
-chmod 0600 "$private_key"
 ssh-keyscan -t ed25519 aur.archlinux.org > "$known_hosts" 2>/dev/null
 fingerprint="$(ssh-keygen -lf "$known_hosts" -E sha256 | awk '{ print $2 }')"
 if [[ "$fingerprint" != 'SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4' ]]; then
