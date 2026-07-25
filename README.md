@@ -111,9 +111,14 @@ recording their new digests.
 
 Create `release-manifests` from an existing commit before distributing App
 credentials; do not create it as an orphan branch. The first manifest addition
-must have exactly one parent, like every later inbox commit. Configure the
-following rules as separate rulesets so each bypass has the narrow scope
-described here:
+must have exactly one parent, like every later inbox commit.
+
+Organization rulesets govern `main`: every change requires a pull request, and
+ref updates to the default branch are restricted so an owner performs the final
+merge. No bot or App identity has a bypass on `main`.
+
+Configure the following repository rules as separate rulesets so each bypass
+has the narrow scope described here:
 
 - The branch-safety ruleset targets `main` and `release-manifests`, requires
   linear history, and blocks force pushes and deletion. The product App has no
@@ -121,12 +126,9 @@ described here:
 - The branch-creation ruleset restricts creation to named operators and
   automation identities. The product App has no bypass, so it cannot create
   another branch.
-- The main-review ruleset requires pull requests for `main`. The product App
-  has no bypass. Named operators or a dedicated merge bot may bypass this rule
-  only for the repository's reviewed, no-merge-commit workflow.
 - The inbox-update ruleset permits direct updates to `release-manifests` only
-  from `repo-wyrd-foo-publisher` and named operators. The App bypass applies
-  only to this ruleset; the branch-safety baseline still applies.
+  from `repo-wyrd-foo-publisher`. The App bypass applies only to this ruleset;
+  the branch-safety baseline still applies.
 
 The inbox is untrusted data: changes are publishable only when a single-parent
 commit adds exactly one canonical manifest at its expected, never-previously-
