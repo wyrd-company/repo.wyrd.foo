@@ -23,6 +23,9 @@ AWS_CLI_INSTALLER = (ROOT / "scripts" / "install-aws-cli.sh").read_text(encoding
 AUR_PUBLISHER = (ROOT / "scripts" / "publish-aur.sh").read_text(encoding="utf-8")
 AUR_KEY_PREPARER = ROOT / "scripts" / "prepare-ssh-private-key.py"
 README = (ROOT / "README.md").read_text(encoding="utf-8")
+DESIGN = (
+    ROOT / "docs" / "technical-designs" / "package-repository-publishing.yml"
+).read_text(encoding="utf-8")
 R2_PUBLISHER = (ROOT / "scripts" / "publish-r2.sh").read_text(encoding="utf-8")
 PUBLIC_KEY = ROOT / "pubkey.gpg"
 INTEGRATION = (ROOT / "tests" / "run-integration.sh").read_text(encoding="utf-8")
@@ -315,8 +318,8 @@ exit 1
         self.assertRegex(result.stdout, r"(?m)^fpr:{9}[0-9A-F]{40}:$")
 
     def test_repository_docs_use_the_confirmed_product_secret_names(self) -> None:
-        self.assertIn("REPO_WYRD_FOO_PUBLISHER_APP_ID", README)
-        self.assertIn("REPO_WYRD_FOO_PUBLISHER_PRIVATE_KEY", README)
+        self.assertIn("REPO_WYRD_FOO_PUBLISHER_APP_ID", DESIGN)
+        self.assertIn("REPO_WYRD_FOO_PUBLISHER_PRIVATE_KEY", DESIGN)
         legacy_names = (
             "REPO_WYRD_FOO_" + "APP_CLIENT_ID",
             "REPO_WYRD_FOO_" + "APP_PRIVATE_KEY",

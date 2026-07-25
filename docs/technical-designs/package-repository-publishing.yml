@@ -46,7 +46,9 @@ proposed-design:
     importing secrets, then verifies every SHA-256 digest, rebuilds signed APT
     and RPM metadata, publishes pointers last, and updates the AUR package.
   release-manifest: >-
-    Schema version 1 is closed JSON. It records the product and package names,
+    Schema version 1 is closed JSON at
+    releases/<product>/<version>.json on the inbox branch. It records the
+    product and package names,
     stable semantic version and identical bare Git tag, source repository and
     forty-character commit, public product metadata, publication targets, and
     one artifact record for every archive or native package. Artifact records
@@ -72,9 +74,39 @@ proposed-design:
     inbox content. The publisher-owned allowlist binds each product to its source
     repository, package identity and metadata, APT/RPM targets, and AUR package.
     The declared public Git tag must resolve to source.commit before any secret
-    is imported. Separate baseline branch-safety and branch-specific rulesets
-    prevent force pushes and deletion while narrowing each bypass; main requires
-    reviewed changes and never grants the product App a bypass.
+    is imported. Organization rulesets require reviewed pull requests on main
+    with the final merge performed by an owner and no bot or App bypass, while
+    repository rulesets prevent force pushes and deletion and narrow the inbox
+    bypass to the publisher App.
+  publishing-contract: >-
+    Product repositories submit releases through the shared
+    .github/actions/submit-release action with an installation token for the
+    repo-wyrd-foo-publisher GitHub App. The App is installed only on
+    wyrd-company/repo.wyrd.foo with Metadata read and Contents read/write and
+    no Actions, Administration, Secrets, Workflows, Pull requests, or other
+    repository permissions; its token is never persisted in a checkout. Product
+    workflows provide REPO_WYRD_FOO_PUBLISHER_APP_ID and
+    REPO_WYRD_FOO_PUBLISHER_PRIVATE_KEY. The publisher workflow uses
+    REPO_WYRD_FOO_GPG_KEY, REPO_WYRD_FOO_S3_API as the full R2 bucket URL of
+    the form https://<account>.r2.cloudflarestorage.com/<bucket>,
+    REPO_WYRD_FOO_S3_ACCESS_KEY, REPO_WYRD_FOO_S3_SECRET, AUR_ACCOUNT, and
+    AUR_PRIVATE_KEY. The workflow derives the S3 endpoint and bucket without
+    logging the configured URL.
+  repository-rulesets: >-
+    The release-manifests inbox is created from an existing commit before App
+    credentials are distributed, never as an orphan branch, so the first
+    manifest addition has exactly one parent like every later inbox commit.
+    Organization rulesets govern main: every change requires a pull request,
+    and ref updates to the default branch are restricted so an owner performs
+    the final merge; no bot or App identity has a bypass. Repository rules are
+    configured as separate rulesets so each bypass has a narrow scope. The
+    branch-safety ruleset targets main and release-manifests, requires linear
+    history, and blocks force pushes and deletion with no product App bypass.
+    The branch-creation ruleset restricts creation to named operators and
+    automation identities, so the App cannot create another branch. The
+    inbox-update ruleset permits direct updates to release-manifests only from
+    repo-wyrd-foo-publisher; that App bypass applies only to this ruleset and
+    the branch-safety baseline still applies.
   apt-repository: >-
     DEB packages are retained beneath apt/pool. Each supported architecture has
     Packages and deterministic Packages.gz indexes beneath
