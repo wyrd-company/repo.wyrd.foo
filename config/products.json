@@ -1,7 +1,9 @@
 {
   "schema_version": 1,
   "x-relationships": {
-    "implements": ["package-repository-publishing"]
+    "implements": [
+      "package-repository-publishing"
+    ]
   },
   "products": {
     "wyrwood": {
@@ -24,6 +26,29 @@
         },
         "aur": {
           "package": "wyrwood-bin"
+        }
+      }
+    },
+    "toha": {
+      "source_repository": "wyrd-company/toha",
+      "package": {
+        "name": "toha",
+        "binary": "toha",
+        "description": "Generate projects and files from templates",
+        "homepage": "https://github.com/wyrd-company/toha",
+        "license": "Apache-2.0",
+        "maintainer": "Wyrd Company <support@wyrd.company>"
+      },
+      "publish": {
+        "apt": {
+          "suite": "stable",
+          "component": "main"
+        },
+        "rpm": {
+          "channel": "stable"
+        },
+        "aur": {
+          "package": "toha-bin"
         }
       }
     }

@@ -336,16 +336,18 @@ class ManifestTests(unittest.TestCase):
                 ):
                     repository.validate_allowed_product(changed, allowlist)
 
-    def test_checked_in_allowlist_is_exactly_wyrwood(self) -> None:
+    def test_checked_in_allowlist_is_exactly_the_released_products(self) -> None:
         products = repository.load_product_allowlist(ROOT / "config" / "products.json")
-        self.assertEqual(set(products), {"wyrwood"})
-        self.assertEqual(products["wyrwood"]["source_repository"], "wyrd-company/wyrwood")
-        self.assertEqual(products["wyrwood"]["package"]["name"], "wyrwood")
-        self.assertEqual(products["wyrwood"]["package"]["binary"], "wyrwood")
-        self.assertEqual(products["wyrwood"]["package"]["license"], "Apache-2.0")
-        self.assertEqual(products["wyrwood"]["publish"]["apt"], {"suite": "stable", "component": "main"})
-        self.assertEqual(products["wyrwood"]["publish"]["rpm"], {"channel": "stable"})
-        self.assertEqual(products["wyrwood"]["publish"]["aur"], {"package": "wyrwood-bin"})
+        self.assertEqual(set(products), {"toha", "wyrwood"})
+        for name in ("toha", "wyrwood"):
+            with self.subTest(product=name):
+                self.assertEqual(products[name]["source_repository"], f"wyrd-company/{name}")
+                self.assertEqual(products[name]["package"]["name"], name)
+                self.assertEqual(products[name]["package"]["binary"], name)
+                self.assertEqual(products[name]["package"]["license"], "Apache-2.0")
+                self.assertEqual(products[name]["publish"]["apt"], {"suite": "stable", "component": "main"})
+                self.assertEqual(products[name]["publish"]["rpm"], {"channel": "stable"})
+                self.assertEqual(products[name]["publish"]["aur"], {"package": f"{name}-bin"})
 
     def test_resolver_reuses_original_addition_for_unchanged_recovery(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
