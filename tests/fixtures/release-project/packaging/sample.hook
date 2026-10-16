@@ -1,0 +1,13 @@
+# ---
+# relationships:
+#   verifies: package-repository-publishing
+# ---
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = sample-tool-bin
+[Action]
+When = PreTransaction
+Exec = /bin/sh /usr/lib/sample-tool/pre-install.sh
+AbortOnFail

@@ -23,6 +23,8 @@ PROFILE = {
     "files": {
         "packaging/sample.service": "/usr/lib/systemd/system/sample.service",
         "packaging/sample.tmpfiles": "/usr/lib/tmpfiles.d/sample.conf",
+        "packaging/sample.hook": "/usr/share/libalpm/hooks/sample.hook",
+        "packaging/pre-install.sh": "/usr/lib/sample-tool/pre-install.sh",
     },
     "hooks": {
         name: f"packaging/{name}.sh"
@@ -41,6 +43,7 @@ class InstallationTests(unittest.TestCase):
             "README.md": b"sample usage\n",
             "packaging/sample.service": b"[Service]\nExecStart=/usr/bin/sample-tool\n",
             "packaging/sample.tmpfiles": b"d /run/sample 0750 root root -\n",
+            "packaging/sample.hook": b"[Action]\nWhen=PreTransaction\nAbortOnFail\n",
         }
         for name, path in PROFILE["hooks"].items():
             content[path] = (
@@ -161,7 +164,8 @@ fi''',
                 root = Path(directory)
                 manifest, path, _ = self.fixture(root)
                 artifact = next(a for a in manifest["artifacts"] if a["format"] == "tar.gz" and a["arch"] == arch)
-                (root / artifact["filename"]).write_bytes(b"tampered")
+                archive = root / artifact["filename"]
+                archive.write_bytes(archive.read_bytes() + b"tampered")
                 with self.assertRaisesRegex(repository.ManifestError, "digest mismatch"):
                     repository.render_aur(path, root / "out", root)
 

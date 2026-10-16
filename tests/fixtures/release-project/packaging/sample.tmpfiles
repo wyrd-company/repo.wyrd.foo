@@ -1,0 +1,5 @@
+# ---
+# relationships:
+#   verifies: package-repository-publishing
+# ---
+d /run/sample-tool 0750 root root -

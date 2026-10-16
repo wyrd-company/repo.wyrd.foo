@@ -190,7 +190,7 @@ def validate_installation(value: Any) -> None:
     destinations = set()
     for source, destination in files.items():
         if not isinstance(destination, str) or not re.fullmatch(
-            r"/usr/lib/(?:systemd/system/[a-zA-Z0-9_-]+\.(?:service|socket|timer|target)|tmpfiles\.d/[a-zA-Z0-9_-]+\.conf)", destination
+            r"/usr/(?:lib/(?:systemd/system/[a-zA-Z0-9_-]+\.(?:service|socket|timer|target)|tmpfiles\.d/[a-zA-Z0-9_-]+\.conf|[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+\.sh)|share/libalpm/hooks/[a-zA-Z0-9_-]+\.hook)", destination
         ) or destination in destinations:
             raise ManifestError("AUR installation destination is unsafe or duplicated")
         destinations.add(destination)

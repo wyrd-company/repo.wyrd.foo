@@ -28,7 +28,7 @@ DESIGN = (
 ).read_text(encoding="utf-8")
 R2_PUBLISHER = (ROOT / "scripts" / "publish-r2.sh").read_text(encoding="utf-8")
 PUBLIC_KEY = ROOT / "pubkey.gpg"
-INTEGRATION = (ROOT / "tests" / "run-integration.sh").read_text(encoding="utf-8")
+INTEGRATION = (ROOT / "tests" / "run-aur-integration.sh").read_text(encoding="utf-8")
 
 
 class WorkflowContractTests(unittest.TestCase):

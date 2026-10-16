@@ -148,7 +148,8 @@ proposed-design:
     directory and mounted into Docker only through an absolute read-only bind
     path. The package installs the binary, declared license, and README.
     An optional installation profile declares systemd units, tmpfiles rules,
-    and four lifecycle scripts under packaging in the release archives. The
+    ALPM hook data and its interpreter-read scripts, and four lifecycle scripts
+    under packaging in the release archives. The
     profile must match the reviewed product allowlist. Historical manifests
     without a profile remain replayable. Both architecture archives must match
     their manifest digests and carry identical regular, uniquely named
