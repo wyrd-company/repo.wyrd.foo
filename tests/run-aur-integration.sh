@@ -45,6 +45,7 @@ PY
 rendered="${work}/rendered package"
 python3 "${root}/scripts/repository.py" render-aur \
   "$aur_manifest" "$rendered" --artifacts "$artifacts"
+cp "${root}/tests/run-installed-binary.sh" "$rendered/"
 cp "${artifacts}/sample-tool_1.2.3_linux_x86_64.tar.gz" \
   "${rendered}/sample-tool-bin-1.2.3-x86_64.tar.gz"
 aur_build_image='archlinux@sha256:412efebb0eeef0ef322ff24ad73f82b1ba2d3b12377db4c5fbe3074c7e7e8678'
@@ -89,7 +90,7 @@ docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_b
     grep -Fxq pre-install /run/sample-lifecycle
     rm /run/sample-stop-fails
     pacman -U --noconfirm "$package_file"
-    /usr/bin/sample-tool | grep -Fxq sample-tool
+    bash /source/run-installed-binary.sh /usr/bin/sample-tool | grep -Fxq sample-tool
     rm /etc/pacman.d/hooks/sample.hook /etc/sample-tool/pre-install.sh
     rm /run/sample-lifecycle
     # An existing daemon executable must survive a failed upgrade unchanged.
@@ -103,7 +104,7 @@ docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_b
     grep -Fxq pre-install /run/sample-lifecycle
     rm /run/sample-stop-fails
     pacman -U --noconfirm "$package_file"
-    /usr/bin/sample-tool | grep -Fxq sample-tool
+    bash /source/run-installed-binary.sh /usr/bin/sample-tool | grep -Fxq sample-tool
     pacman -R --noconfirm sample-tool-bin
     [[ ! -e /usr/lib/systemd/system/sample.service ]]
     grep -Fxq pre-remove /run/sample-lifecycle
