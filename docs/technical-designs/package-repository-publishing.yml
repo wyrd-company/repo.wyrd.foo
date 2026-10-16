@@ -147,6 +147,23 @@ proposed-design:
     render workspace is created under the canonical GitHub runner temporary
     directory and mounted into Docker only through an absolute read-only bind
     path. The package installs the binary, declared license, and README.
+    An optional installation profile declares systemd units, tmpfiles rules,
+    ALPM hook data and its interpreter-read scripts, and four lifecycle scripts
+    under packaging in the release archives. The profile must match the reviewed
+    product allowlist. Historical manifests
+    without a profile remain replayable. Both architecture archives must match
+    their manifest digests and carry identical regular, uniquely named
+    installation sources. Staging validates these before public upload. The
+    renderer installs data files with mode 0644 and embeds the verified scripts
+    in native install, upgrade, and removal functions. Removal maps to the
+    scripts' remove argument. Pacman ignores non-zero scriptlet returns and
+    cannot roll back a later service-setup failure. Products that require
+    abort-before-replacement enforce it with an already-installed ALPM
+    PreTransaction hook with AbortOnFail, not an install function. The product's
+    upgrade instructions require a root bootstrap under /etc when the package
+    does not yet own that hook. Permanent package files use /usr; the bootstrap
+    override is removed after successful service installation. Rendering and
+    package building execute no hooks.
     Replaying the same manifest produces the same AUR files and no additional
     commit.
   verification: >-

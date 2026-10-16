@@ -36,3 +36,23 @@ for line_break in ("\r", "\n", "\r\n"):
     )
     if not list(validator.iter_errors(injected)):
         raise AssertionError("maintainer line-break injection passed JSON Schema validation")
+
+installation = {
+    "files": {"packaging/sample.service": "/usr/lib/systemd/system/sample.service"},
+    "hooks": {
+        name: f"packaging/{name}.sh"
+        for name in ("pre-install", "post-install", "pre-remove", "post-remove")
+    },
+}
+with_installation = json.loads(json.dumps(fixture))
+with_installation["publish"]["aur"]["installation"] = installation
+validator.validate(with_installation)
+for source, destination in (
+    ("../sample.service", "/usr/lib/systemd/system/sample.service"),
+    ("packaging/sample.service", "/etc/sudoers"),
+    ("packaging/sample.service", "/usr/lib/systemd/system/../sample.service"),
+):
+    invalid = json.loads(json.dumps(with_installation))
+    invalid["publish"]["aur"]["installation"]["files"] = {source: destination}
+    if not list(validator.iter_errors(invalid)):
+        raise AssertionError("unsafe installation path passed JSON Schema validation")

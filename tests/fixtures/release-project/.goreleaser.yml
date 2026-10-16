@@ -32,6 +32,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - packaging/*
 
 nfpms:
   - id: packages

@@ -28,7 +28,7 @@ DESIGN = (
 ).read_text(encoding="utf-8")
 R2_PUBLISHER = (ROOT / "scripts" / "publish-r2.sh").read_text(encoding="utf-8")
 PUBLIC_KEY = ROOT / "pubkey.gpg"
-INTEGRATION = (ROOT / "tests" / "run-integration.sh").read_text(encoding="utf-8")
+INTEGRATION = (ROOT / "tests" / "run-aur-integration.sh").read_text(encoding="utf-8")
 
 
 class WorkflowContractTests(unittest.TestCase):
@@ -336,7 +336,7 @@ exit 1
         self.assertIn("--cache-control 'public,max-age=31536000,immutable'", R2_PUBLISHER)
 
     def test_workflow_invokes_aur_publisher_without_a_relative_work_root(self) -> None:
-        self.assertIn('run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}"', WORKFLOW)
+        self.assertIn('run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}" "../artifacts"', WORKFLOW)
         self.assertNotIn(".tmp/aur", WORKFLOW)
         self.assertIn("mktemp -d", AUR_PUBLISHER)
         self.assertIn('realpath -e -- "$RUNNER_TEMP"', AUR_PUBLISHER)

@@ -1,0 +1,6 @@
+# ---
+# relationships:
+#   verifies: package-repository-publishing
+# ---
+[Service]
+ExecStart=/usr/bin/sample-tool

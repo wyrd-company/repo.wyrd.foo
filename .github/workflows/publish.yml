@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: wyrd-company/repo.wyrd.foo
-          ref: dd9e9cd858a61e168b1f9c1771e45d42df91c794 # PUBLISHER_CODE_SHA_SENTINEL
+          ref: a6963dc818e3c98bf31ff62544d333eacd91b67f # PUBLISHER_CODE_SHA_SENTINEL
           path: publisher
           persist-credentials: false
 
@@ -114,4 +114,4 @@ jobs:
         env:
           AUR_ACCOUNT: ${{ secrets.AUR_ACCOUNT }}
           AUR_PRIVATE_KEY: ${{ secrets.AUR_PRIVATE_KEY }}
-        run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}"
+        run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}" "../artifacts"

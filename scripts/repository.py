@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -137,8 +138,10 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
     if publish["rpm"] != {"channel": "stable"}:
         raise ManifestError("publish.rpm must select stable")
     aur = publish["aur"]
-    if not isinstance(aur, dict) or set(aur) != {"package"}:
-        raise ManifestError("publish.aur must contain only package")
+    if not isinstance(aur, dict) or set(aur) not in ({"package"}, {"package", "installation"}):
+        raise ManifestError("publish.aur must contain package and optional installation")
+    if "installation" in aur:
+        validate_installation(aur["installation"])
     aur_package = require_text(aur["package"], "publish.aur.package", 80)
     if aur_package != f"{package['name']}-bin":
         raise ManifestError("publish.aur.package must be the native package name plus -bin")
@@ -174,6 +177,26 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
         validate_release_url(artifact["url"], repository, version, filename, context)
     if combinations != EXPECTED_ARTIFACTS:
         raise ManifestError("artifacts do not cover the required formats and architectures")
+
+
+def validate_installation(value: Any) -> None:
+    if not isinstance(value, dict):
+        raise ManifestError("AUR installation must be an object")
+    require_keys(value, {"files", "hooks"}, "AUR installation")
+    files, hooks = value["files"], value["hooks"]
+    if not isinstance(files, dict) or not files or not isinstance(hooks, dict):
+        raise ManifestError("AUR installation requires non-empty files and hooks objects")
+    require_keys(hooks, {"pre-install", "post-install", "pre-remove", "post-remove"}, "AUR hooks")
+    destinations = set()
+    for source, destination in files.items():
+        if not isinstance(destination, str) or not re.fullmatch(
+            r"/usr/(?:lib/(?:systemd/system/[a-zA-Z0-9_-]+\.(?:service|socket|timer|target)|tmpfiles\.d/[a-zA-Z0-9_-]+\.conf|[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+\.sh)|share/libalpm/hooks/[a-zA-Z0-9_-]+\.hook)", destination
+        ) or destination in destinations:
+            raise ManifestError("AUR installation destination is unsafe or duplicated")
+        destinations.add(destination)
+    for source in list(files) + list(hooks.values()):
+        if not isinstance(source, str) or not re.fullmatch(r"packaging/[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+", source):
+            raise ManifestError("AUR installation source must be a file under packaging")
 
 
 def validate_release_url(value: Any, repository: str, tag: str, filename: str, context: str) -> None:
@@ -245,6 +268,10 @@ def validate_allowed_product(manifest: dict[str, Any], allowlist_path: Path) -> 
         "package": manifest["package"],
         "publish": manifest["publish"],
     }
+    # Historical binary-only manifests remain replayable after a product opts in.
+    allowed = copy.deepcopy(allowed)
+    if "installation" not in manifest["publish"]["aur"]:
+        allowed["publish"]["aur"].pop("installation", None)
     if allowed != expected:
         raise ManifestError(f"release manifest disagrees with the allowlist for {manifest['product']}")
 
@@ -438,8 +465,52 @@ def archive_members(path: Path) -> set[str]:
         return members
 
 
+def installation_sources(manifest: dict[str, Any], artifacts_root: Path | None) -> dict[str, bytes]:
+    profile = manifest["publish"]["aur"].get("installation")
+    if profile is None:
+        return {}
+    if artifacts_root is None:
+        raise ManifestError("AUR installation requires downloaded artifacts")
+    sources = set(profile["files"]) | set(profile["hooks"].values())
+    agreed = None
+    for artifact in manifest["artifacts"]:
+        if artifact["format"] != "tar.gz":
+            continue
+        path = artifacts_root / artifact["filename"]
+        if not path.is_file() or sha256_file(path) != artifact["sha256"]:
+            raise ManifestError("AUR installation archive digest mismatch")
+        members = archive_members(path)
+        if not sources.issubset(members):
+            raise ManifestError("archive is missing AUR installation sources")
+        current = {}
+        with tarfile.open(path, "r:gz") as archive:
+            for member in archive.getmembers():
+                normalized = Path(member.name).as_posix()
+                if normalized not in sources:
+                    continue
+                if member.size > MAX_ARTIFACT_BYTES:
+                    raise ManifestError("AUR installation source is too large")
+                stream = archive.extractfile(member)
+                assert stream is not None  # archive_members checked regular files
+                with stream:
+                    current[normalized] = stream.read()
+        if agreed is not None and current != agreed:
+            raise ManifestError("AUR installation sources disagree across architectures")
+        agreed = current
+    assert agreed is not None  # validate_manifest requires both archives
+    for source in profile["hooks"].values():
+        try:
+            text = agreed[source].decode("utf-8")
+        except UnicodeError as error:
+            raise ManifestError("AUR hook must be UTF-8 shell source") from error
+        if "\0" in text:
+            raise ManifestError("AUR hook contains NUL")
+    return agreed
+
+
 def stage_artifacts(manifest_path: Path, artifacts_root: Path, stage: Path, public_key: Path) -> None:
     manifest = load_manifest(manifest_path)
+    installation_sources(manifest, artifacts_root)
     package = manifest["package"]
     new_rpms: list[str] = []
     (stage / "artifacts" / manifest["product"] / manifest["version"]).mkdir(parents=True, exist_ok=True)
@@ -502,10 +573,12 @@ def shell_single_quote(value: str) -> str:
     return "'" + value.replace("'", "'\"'\"'") + "'"
 
 
-def render_aur(manifest_path: Path, output: Path) -> None:
+def render_aur(manifest_path: Path, output: Path, artifacts_root: Path | None = None) -> None:
     manifest = load_manifest(manifest_path)
     package = manifest["package"]
     aur_name = manifest["publish"]["aur"]["package"]
+    sources = installation_sources(manifest, artifacts_root)
+    profile = manifest["publish"]["aur"].get("installation")
     archives = {item["arch"]: item for item in manifest["artifacts"] if item["format"] == "tar.gz"}
     base_url = f"https://repo.wyrd.foo/artifacts/{manifest['product']}/{manifest['version']}"
     output.mkdir(parents=True, exist_ok=True)
@@ -532,6 +605,23 @@ package() {{
   install -Dm644 "${{srcdir}}/README.md" "${{pkgdir}}/usr/share/doc/{package['name']}/README.md"
 }}
 """
+    if profile is not None:
+        pkgbuild = pkgbuild.replace("options=('!strip')", f"options=('!strip')\ninstall={shell_single_quote(aur_name + '.install')}")
+        commands = "".join(
+            f'  install -Dm644 "${{srcdir}}/{source}" "${{pkgdir}}{destination}"\n'
+            for source, destination in sorted(profile["files"].items())
+        )
+        pkgbuild = pkgbuild.removesuffix("}\n") + commands + "}\n"
+        functions = []
+        for native, hook in (
+            ("pre_install", "pre-install"), ("pre_upgrade", "pre-install"),
+            ("post_install", "post-install"), ("post_upgrade", "post-install"),
+            ("pre_remove", "pre-remove"), ("post_remove", "post-remove"),
+        ):
+            script = shell_single_quote(sources[profile["hooks"][hook]].decode("utf-8"))
+            arguments = 'remove "$@"' if native.endswith("_remove") else '"$@"'
+            functions.append(f"{native}() {{\n  /bin/sh -c {script} -- {arguments}\n}}\n")
+        (output / f"{aur_name}.install").write_text("\n".join(functions), encoding="utf-8")
     (output / "PKGBUILD").write_text(pkgbuild, encoding="utf-8")
 
 
@@ -563,6 +653,7 @@ def main() -> int:
     aur = subparsers.add_parser("render-aur")
     aur.add_argument("manifest", type=Path)
     aur.add_argument("output", type=Path)
+    aur.add_argument("--artifacts", type=Path)
     arguments = parser.parse_args()
     try:
         if arguments.command == "validate":
@@ -589,7 +680,7 @@ def main() -> int:
         elif arguments.command == "stage":
             stage_artifacts(arguments.manifest, arguments.artifacts, arguments.output, arguments.public_key)
         elif arguments.command == "render-aur":
-            render_aur(arguments.manifest, arguments.output)
+            render_aur(arguments.manifest, arguments.output, arguments.artifacts)
     except (ManifestError, OSError, subprocess.CalledProcessError, tarfile.TarError) as error:
         print(f"repository publisher: {error}", file=sys.stderr)
         return 1
