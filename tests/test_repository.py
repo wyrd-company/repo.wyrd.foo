@@ -347,7 +347,8 @@ class ManifestTests(unittest.TestCase):
                 self.assertEqual(products[name]["package"]["license"], "Apache-2.0")
                 self.assertEqual(products[name]["publish"]["apt"], {"suite": "stable", "component": "main"})
                 self.assertEqual(products[name]["publish"]["rpm"], {"channel": "stable"})
-                self.assertEqual(products[name]["publish"]["aur"], {"package": f"{name}-bin"})
+                self.assertEqual(products[name]["publish"]["aur"]["package"], f"{name}-bin")
+                self.assertEqual("installation" in products[name]["publish"]["aur"], name == "wyrwood")
 
     def test_resolver_reuses_original_addition_for_unchanged_recovery(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

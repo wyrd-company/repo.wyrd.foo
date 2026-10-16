@@ -336,7 +336,7 @@ exit 1
         self.assertIn("--cache-control 'public,max-age=31536000,immutable'", R2_PUBLISHER)
 
     def test_workflow_invokes_aur_publisher_without_a_relative_work_root(self) -> None:
-        self.assertIn('run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}"', WORKFLOW)
+        self.assertIn('run: scripts/publish-aur.sh "../queue/${MANIFEST_PATH}" "../artifacts"', WORKFLOW)
         self.assertNotIn(".tmp/aur", WORKFLOW)
         self.assertIn("mktemp -d", AUR_PUBLISHER)
         self.assertIn('realpath -e -- "$RUNNER_TEMP"', AUR_PUBLISHER)

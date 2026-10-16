@@ -50,7 +50,11 @@ if [[ "$rendered" != "${work_root}/rendered" || "$rendered" != /* ]]; then
   echo 'The rendered AUR directory escaped its work directory.' >&2
   exit 1
 fi
-python3 scripts/repository.py render-aur "$manifest" "$rendered"
+render_arguments=()
+if [[ -n "${2:-}" ]]; then
+  render_arguments+=(--artifacts "$2")
+fi
+python3 scripts/repository.py render-aur "$manifest" "$rendered" "${render_arguments[@]}"
 
 aur_build_image='archlinux@sha256:412efebb0eeef0ef322ff24ad73f82b1ba2d3b12377db4c5fbe3074c7e7e8678'
 docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_build_image" \
@@ -83,7 +87,10 @@ find "$checkout" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
 cp "${rendered}/PKGBUILD" "${rendered}/.SRCINFO" "$checkout/"
 git -C "$checkout" config user.name "$AUR_ACCOUNT"
 git -C "$checkout" config user.email 'support@wyrd.company'
-git -C "$checkout" add PKGBUILD .SRCINFO
+if [[ -f "${rendered}/${package}.install" ]]; then
+  cp "${rendered}/${package}.install" "$checkout/"
+fi
+git -C "$checkout" add --all
 if git -C "$checkout" diff --cached --quiet; then
   exit 0
 fi

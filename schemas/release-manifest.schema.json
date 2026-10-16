@@ -77,6 +77,55 @@
             "package": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9-]*-bin$"
+            },
+            "installation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "files",
+                "hooks"
+              ],
+              "properties": {
+                "files": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "propertyNames": {
+                    "pattern": "^packaging/[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "pattern": "^/usr/lib/(systemd/system/[a-zA-Z0-9_-]+\\.(service|socket|timer|target)|tmpfiles\\.d/[a-zA-Z0-9_-]+\\.conf)$"
+                  }
+                },
+                "hooks": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "pre-install",
+                    "post-install",
+                    "pre-remove",
+                    "post-remove"
+                  ],
+                  "properties": {
+                    "pre-install": {
+                      "type": "string",
+                      "pattern": "^packaging/[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"
+                    },
+                    "post-install": {
+                      "type": "string",
+                      "pattern": "^packaging/[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"
+                    },
+                    "pre-remove": {
+                      "type": "string",
+                      "pattern": "^packaging/[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"
+                    },
+                    "post-remove": {
+                      "type": "string",
+                      "pattern": "^packaging/[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"
+                    }
+                  }
+                }
+              }
             }
           }
         }

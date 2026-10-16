@@ -147,6 +147,15 @@ proposed-design:
     render workspace is created under the canonical GitHub runner temporary
     directory and mounted into Docker only through an absolute read-only bind
     path. The package installs the binary, declared license, and README.
+    An optional installation profile declares systemd units, tmpfiles rules,
+    and four lifecycle scripts under packaging in the release archives. The
+    profile must match the reviewed product allowlist. Historical manifests
+    without a profile remain replayable. Both architecture archives must match
+    their manifest digests and carry identical regular, uniquely named
+    installation sources. Staging validates these before public upload. The
+    renderer installs data files with mode 0644 and embeds the verified scripts
+    in native install, upgrade, and removal functions. Removal maps to the
+    scripts' remove argument. Rendering and package building execute no hooks.
     Replaying the same manifest produces the same AUR files and no additional
     commit.
   verification: >-
