@@ -77,17 +77,21 @@ docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_b
     bsdtar -tf "$package_file" | grep -Fxq "usr/share/libalpm/hooks/sample.hook"
     bsdtar -tf "$package_file" | grep -Fxq ".INSTALL"
     # Bootstrap the incoming aborting hook before the first package transaction.
-    install -Dm644 /home/builder/package/src/packaging/pre-install.sh /usr/lib/sample-tool/pre-install.sh
-    install -Dm644 /home/builder/package/src/packaging/sample.hook /usr/share/libalpm/hooks/sample.hook
+    install -Dm644 /home/builder/package/src/packaging/pre-install.sh /etc/sample-tool/pre-install.sh
+    install -d /etc/pacman.d/hooks
+    sed "s|/usr/lib/sample-tool/pre-install.sh|/etc/sample-tool/pre-install.sh|" /home/builder/package/src/packaging/sample.hook > /etc/pacman.d/hooks/sample.hook
     touch /run/sample-stop-fails
     if pacman -U --noconfirm "$package_file"; then
       echo "Failed stop did not abort first installation." >&2
       exit 1
     fi
     [[ ! -e /usr/bin/sample-tool ]]
+    grep -Fxq pre-install /run/sample-lifecycle
     rm /run/sample-stop-fails
     pacman -U --noconfirm "$package_file"
     /usr/bin/sample-tool | grep -Fxq sample-tool
+    rm /etc/pacman.d/hooks/sample.hook /etc/sample-tool/pre-install.sh
+    rm /run/sample-lifecycle
     # An existing daemon executable must survive a failed upgrade unchanged.
     printf "old executable\n" > /usr/bin/sample-tool
     touch /run/sample-stop-fails
@@ -96,6 +100,7 @@ docker run --rm --mount "type=bind,src=${rendered},dst=/source,readonly" "$aur_b
       exit 1
     fi
     grep -Fxq "old executable" /usr/bin/sample-tool
+    grep -Fxq pre-install /run/sample-lifecycle
     rm /run/sample-stop-fails
     pacman -U --noconfirm "$package_file"
     /usr/bin/sample-tool | grep -Fxq sample-tool
