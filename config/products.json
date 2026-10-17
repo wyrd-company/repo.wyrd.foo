@@ -66,6 +66,40 @@
           "package": "toha-bin"
         }
       }
+    },
+    "trowel": {
+      "source_repository": "wyrd-company/trowel",
+      "package": {
+        "name": "trowel",
+        "binary": "trowel",
+        "description": "Relay HTTP webhooks into NATS JetStream and JetStream messages out to HTTP or commands",
+        "homepage": "https://github.com/wyrd-company/trowel",
+        "license": "Apache-2.0",
+        "maintainer": "Wyrd Company <support@wyrd.company>"
+      },
+      "publish": {
+        "apt": {
+          "suite": "stable",
+          "component": "main"
+        },
+        "rpm": {
+          "channel": "stable"
+        },
+        "aur": {
+          "package": "trowel-bin",
+          "installation": {
+            "files": {
+              "packaging/trowel.service": "/usr/lib/systemd/system/trowel.service"
+            },
+            "hooks": {
+              "pre-install": "packaging/preinstall.sh",
+              "post-install": "packaging/postinstall.sh",
+              "pre-remove": "packaging/preremove.sh",
+              "post-remove": "packaging/postremove.sh"
+            }
+          }
+        }
+      }
     }
   }
 }
