@@ -338,8 +338,8 @@ class ManifestTests(unittest.TestCase):
 
     def test_checked_in_allowlist_is_exactly_the_released_products(self) -> None:
         products = repository.load_product_allowlist(ROOT / "config" / "products.json")
-        self.assertEqual(set(products), {"toha", "wyrwood"})
-        for name in ("toha", "wyrwood"):
+        self.assertEqual(set(products), {"toha", "trowel", "wyrwood"})
+        for name in ("toha", "trowel", "wyrwood"):
             with self.subTest(product=name):
                 self.assertEqual(products[name]["source_repository"], f"wyrd-company/{name}")
                 self.assertEqual(products[name]["package"]["name"], name)
@@ -348,7 +348,7 @@ class ManifestTests(unittest.TestCase):
                 self.assertEqual(products[name]["publish"]["apt"], {"suite": "stable", "component": "main"})
                 self.assertEqual(products[name]["publish"]["rpm"], {"channel": "stable"})
                 self.assertEqual(products[name]["publish"]["aur"]["package"], f"{name}-bin")
-                self.assertEqual("installation" in products[name]["publish"]["aur"], name == "wyrwood")
+                self.assertEqual("installation" in products[name]["publish"]["aur"], name in {"trowel", "wyrwood"})
 
     def test_resolver_reuses_original_addition_for_unchanged_recovery(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
