@@ -336,15 +336,16 @@ class ManifestTests(unittest.TestCase):
                 ):
                     repository.validate_allowed_product(changed, allowlist)
 
-    def test_checked_in_allowlist_is_exactly_the_released_products(self) -> None:
+    def test_checked_in_allowlist_is_exactly_the_approved_products(self) -> None:
         products = repository.load_product_allowlist(ROOT / "config" / "products.json")
-        self.assertEqual(set(products), {"toha", "trowel", "wyrwood"})
-        for name in ("toha", "trowel", "wyrwood"):
+        self.assertEqual(set(products), {"dcb", "toha", "trowel", "wyrwood"})
+        for name in ("dcb", "toha", "trowel", "wyrwood"):
             with self.subTest(product=name):
-                self.assertEqual(products[name]["source_repository"], f"wyrd-company/{name}")
+                repository_name = "devcontainer-builder" if name == "dcb" else name
+                self.assertEqual(products[name]["source_repository"], f"wyrd-company/{repository_name}")
                 self.assertEqual(products[name]["package"]["name"], name)
                 self.assertEqual(products[name]["package"]["binary"], name)
-                self.assertEqual(products[name]["package"]["license"], "Apache-2.0")
+                self.assertEqual(products[name]["package"]["license"], "MIT" if name == "dcb" else "Apache-2.0")
                 self.assertEqual(products[name]["publish"]["apt"], {"suite": "stable", "component": "main"})
                 self.assertEqual(products[name]["publish"]["rpm"], {"channel": "stable"})
                 self.assertEqual(products[name]["publish"]["aur"]["package"], f"{name}-bin")

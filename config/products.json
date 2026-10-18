@@ -100,6 +100,29 @@
           }
         }
       }
+    },
+    "dcb": {
+      "source_repository": "wyrd-company/devcontainer-builder",
+      "package": {
+        "name": "dcb",
+        "binary": "dcb",
+        "description": "Build and run development containers",
+        "homepage": "https://github.com/wyrd-company/devcontainer-builder",
+        "license": "MIT",
+        "maintainer": "Wyrd Company <support@wyrd.company>"
+      },
+      "publish": {
+        "apt": {
+          "suite": "stable",
+          "component": "main"
+        },
+        "rpm": {
+          "channel": "stable"
+        },
+        "aur": {
+          "package": "dcb-bin"
+        }
+      }
     }
   }
 }
