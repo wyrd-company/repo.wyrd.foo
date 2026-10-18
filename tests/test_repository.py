@@ -339,6 +339,9 @@ class ManifestTests(unittest.TestCase):
     def test_checked_in_allowlist_is_exactly_the_approved_products(self) -> None:
         products = repository.load_product_allowlist(ROOT / "config" / "products.json")
         self.assertEqual(set(products), {"dcb", "toha", "trowel", "wyrwood"})
+        self.assertEqual(products["dcb"]["package"]["description"], "Build and run development containers")
+        self.assertEqual(products["dcb"]["package"]["homepage"], "https://github.com/wyrd-company/devcontainer-builder")
+        self.assertEqual(products["dcb"]["package"]["maintainer"], "Wyrd Company <support@wyrd.company>")
         for name in ("dcb", "toha", "trowel", "wyrwood"):
             with self.subTest(product=name):
                 repository_name = "devcontainer-builder" if name == "dcb" else name
