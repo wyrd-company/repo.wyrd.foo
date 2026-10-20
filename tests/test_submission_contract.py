@@ -91,13 +91,11 @@ class ContractTests(unittest.TestCase):
             self.assertEqual(pinned, (ROOT / relative).read_bytes())
 
     def test_caller_reads_parent_release_environment_without_interpolation(self):
-        manifest = ROOT / "tests/fixtures/sample-tool-1.2.3.json"
         release = {
             "sample-tool": {"tag": "1.2.3", "version": "1.2.3", "prerelease": False}
         }
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
-            (work / "release-manifest.json").write_bytes(manifest.read_bytes())
             output = work / "output"
             step = self.caller["job"]["steps"][0]
             environment = {
@@ -117,9 +115,10 @@ class ContractTests(unittest.TestCase):
             )
         self.assertEqual(result["tag"], release["sample-tool"]["tag"])
         self.assertEqual(result["version"], release["sample-tool"]["version"])
-        self.assertEqual(len(json.loads(result["assets"])), 6)
+        self.assertEqual(set(result), {"tag", "version"})
         self.assertEqual(
-            set(self.caller["job"]["steps"][-1]["with"]), set(self.action["inputs"])
+            set(self.caller["job"]["steps"][-1]["with"]),
+            set(self.action["inputs"]) - {"release-assets"},
         )
 
     def test_action_wiring_keeps_authority_and_runtime_closed(self):

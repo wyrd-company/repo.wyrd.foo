@@ -29,6 +29,8 @@ the caller checkout or the inbox.
   (`sha256:<64 lowercase hex>`). Extra GitHub asset fields are accepted. When
   omitted, the Action reads the asset list from the release record. When
   supplied, both the supplied and fetched digests must match the manifest.
+  This is an optional cross-check for callers that hold release-record digests
+  from an independent source. The recommended caller omits it.
 - `app-client-id` (required): client ID of the publisher GitHub App.
 - `app-private-key` (required): private key of that App.
 
@@ -48,11 +50,12 @@ writes. See `test_each_asset_digest_and_name_is_bound_to_release_record`,
 [the executable fixtures](../tests/test_submission_action.py).
 
 The [caller fixture](../tests/fixtures/release-process/caller.yml) shows the
-part publish-job value. It takes tag and version from `RELEASE_JSON` and
-passes the selected asset names and digests to the Action. The fixture assumes
+part publish-job value. It takes tag and version from `RELEASE_JSON`; the
+Action fetches release asset names and digests from GitHub. The fixture assumes
 its package selection manifest is already in the workspace; the part that
-prepares that file is outside this Action. The fixture's version comment labels
-the initial Action interface; its commit pin selects the tested implementation.
+prepares that file is outside this Action. This integration fixture uses a
+branch-local pin and a provisional version comment, not a published tag.
+Production callers need a commit on `main` and its released version comment.
 
 ## Credentials and authority
 
@@ -68,18 +71,23 @@ those values; the publish job must use that environment. The [credential fixture
 uses repository or organization secrets, with no environment.
 
 The Action requests a Contents-write installation token only for
-`wyrd-company/repo.wyrd.foo`. It refuses installation authority that includes
-another repository. The inbox is fixed to `release-manifests`; paths derive
+`wyrd-company/repo.wyrd.foo`. It checks that this token covers only that
+repository. This check cannot reveal the full repository selection of the App
+installation. The inbox is fixed to `release-manifests`; paths derive
 from the validated product and version. No input selects a destination
 repository, branch, code revision, API endpoint, or shell command. App branch
 rules described in the publishing design remain required: only this App can
-update the inbox, and it cannot bypass `main` protection.
+update the inbox, and it cannot bypass `main` protection. Operators must keep
+the App installation limited to this repository. Epic UAT must verify the
+installation repository selection and these branch rules; the token-scope
+check does not establish either.
 
-The caller's GitHub token stays read-only. The App token is used only for inbox
-reads, a create-only Contents API request, and the fixed `release-manifest`
+The caller's GitHub token stays read-only. The App token is used only for
+token-scope and inbox reads, a create-only Contents API request, and the fixed
+`release-manifest`
 dispatch. Authenticated API requests do not follow redirects. Provider error
 text and input values are excluded from failure output. Authority and redirect
-checks are exercised by `test_wider_or_foreign_app_repository_authority_is_refused`
+checks are exercised by `test_wider_or_foreign_installation_token_scope_is_refused`
 and `test_redirect_never_replays_credentials`.
 
 ## Outputs and retry
