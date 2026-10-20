@@ -148,7 +148,7 @@ def submit(manifest, writer):
     if authority["total_count"] != 1 or [
         repo["full_name"] for repo in authority["repositories"]
     ] != [DESTINATION]:
-        raise ManifestError("App authority must cover only the package repository")
+        raise ManifestError("Installation token must cover only the package repository")
     prefix = f"/repos/{DESTINATION}"
     path = f"releases/{manifest['product']}/{manifest['version']}.json"
     content = canonical_bytes(manifest)

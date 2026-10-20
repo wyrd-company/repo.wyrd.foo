@@ -273,6 +273,9 @@ class SubmissionTests(unittest.TestCase):
     def test_identical_replay_returns_same_identity_without_new_submission(self):
         self.assertEqual(self.run_action(), 0)
         first = self.output()
+        (self.server.root / "later.txt").write_text("later\n")
+        self.server.git("add", "later.txt")
+        self.server.git("commit", "--quiet", "-m", "Later inbox addition")
         self.manifest = dict(reversed(list(self.manifest.items())))
         self.assertEqual(self.run_action(), 0)
         second = self.output()
@@ -409,7 +412,8 @@ class SubmissionTests(unittest.TestCase):
         self.assert_refused()
         self.assertIn("HTTP 403", self.errors.getvalue())
 
-    def test_wider_or_foreign_app_repository_authority_is_refused(self):
+    def test_wider_or_foreign_installation_token_scope_is_refused(self):
+        # Synthetic token-scope responses; installation breadth is an operator check.
         for authority in (
             {"total_count": 2, "repositories": [{"full_name": submission.DESTINATION}]},
             {

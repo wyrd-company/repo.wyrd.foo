@@ -95,18 +95,18 @@ MUTATIONS = [
         "test_duplicate_asset_names_are_refused",
     ),
     (
-        "App repository count",
+        "Token repository count",
         ACTION,
         'authority["total_count"] != 1',
         "False",
-        "test_wider_or_foreign_app_repository_authority_is_refused",
+        "test_wider_or_foreign_installation_token_scope_is_refused",
     ),
     (
-        "App repository identity",
+        "Token repository identity",
         ACTION,
         "] != [DESTINATION]:",
         "] == []:",
-        "test_wider_or_foreign_app_repository_authority_is_refused",
+        "test_wider_or_foreign_installation_token_scope_is_refused",
     ),
     (
         "immutable replay",
@@ -120,6 +120,13 @@ MUTATIONS = [
         ACTION,
         'state = "unchanged"',
         'state = "created"',
+        "test_identical_replay_returns_same_identity_without_new_submission",
+    ),
+    (
+        "original inbox addition on replay",
+        ACTION,
+        'commit = require_sha(history[0]["sha"])',
+        "commit = head",
         "test_identical_replay_returns_same_identity_without_new_submission",
     ),
     (
