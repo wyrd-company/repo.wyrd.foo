@@ -47,4 +47,5 @@ Prebuilt Arch packages are published to the AUR as `<product>-bin`.
 
 The publishing design, contract, and repository rulesets are described in
 [package-repository-publishing](docs/technical-designs/package-repository-publishing.yml).
+The [submission Action guide](docs/submit-release.md) covers release-process callers.
 Development instructions are in [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -94,6 +94,7 @@ class ManifestTests(unittest.TestCase):
     def test_confines_download_to_exact_github_release(self) -> None:
         for url in (
             "https://example.invalid/payload",
+            "https://example.invalid/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_x86_64.tar.gz",
             "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/other.rpm",
             "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_x86_64.tar.gz?mutable=1",
         ):

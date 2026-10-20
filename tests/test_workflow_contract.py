@@ -18,7 +18,7 @@ ACTION = (ROOT / ".github" / "actions" / "submit-release" / "action.yml").read_t
     encoding="utf-8"
 )
 WORKFLOW = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
-COMMIT_SCRIPT = (ROOT / "scripts" / "commit-release.sh").read_text(encoding="utf-8")
+SUBMISSION = (ROOT / "scripts" / "submit-release.py").read_text(encoding="utf-8")
 AWS_CLI_INSTALLER = (ROOT / "scripts" / "install-aws-cli.sh").read_text(encoding="utf-8")
 AUR_PUBLISHER = (ROOT / "scripts" / "publish-aur.sh").read_text(encoding="utf-8")
 AUR_KEY_PREPARER = ROOT / "scripts" / "prepare-ssh-private-key.py"
@@ -33,13 +33,17 @@ INTEGRATION = (ROOT / "tests" / "run-aur-integration.sh").read_text(encoding="ut
 
 class WorkflowContractTests(unittest.TestCase):
     def test_product_app_writes_only_the_inbox_flow(self) -> None:
-        self.assertIn("ref: release-manifests", ACTION)
+        self.assertIn("submit-release.py", ACTION)
         self.assertIn("repository_dispatch", WORKFLOW)
-        self.assertIn("HEAD:release-manifests", COMMIT_SCRIPT)
-        self.assertNotIn("HEAD:main", COMMIT_SCRIPT)
+        self.assertIn('INBOX = "release-manifests"', SUBMISSION)
+        self.assertIn('DESTINATION = "wyrd-company/repo.wyrd.foo"', SUBMISSION)
+        self.assertIn("owner: wyrd-company", ACTION)
+        self.assertIn("repositories: repo.wyrd.foo", ACTION)
+        self.assertIn("permission-contents: write", ACTION)
+        self.assertNotIn("subprocess", SUBMISSION)
 
     def test_every_checkout_disables_credential_persistence(self) -> None:
-        self.assertEqual(ACTION.count("persist-credentials: false"), 1)
+        self.assertNotIn("actions/checkout@", ACTION)
         self.assertEqual(WORKFLOW.count("persist-credentials: false"), 2)
         self.assertNotIn("persist-credentials: true", ACTION + WORKFLOW)
 
