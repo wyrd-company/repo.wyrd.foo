@@ -10,9 +10,22 @@ Changes to `main` require a pull request; an owner performs the final merge.
 
 ## Development
 
+The checks need Python with `jsonschema` and `PyYAML`, Task, ShellCheck,
+`rumdl`, `ryl`, and Docker. The submission Action itself uses only the Python
+standard library.
+
 ```console
 task check
+task submission:guards
 ```
+
+`submission:guards` mutates isolated copies and requires each named assertion
+to fail. The active checkout stays unchanged.
+
+When Action runtime files change, commit them before updating the caller
+fixture pin. The contract test compares the pinned files with the files under
+test. The schema provenance file records the source revision and digests;
+update it only when adopting a new contract schema.
 
 ## Signing-key rotation
 

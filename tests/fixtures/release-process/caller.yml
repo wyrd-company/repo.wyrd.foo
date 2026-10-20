@@ -1,0 +1,46 @@
+# ---
+# relationships:
+#   references: package-repository-publishing
+# ---
+
+units: sample-tool
+job:
+  runs-on: ubuntu-24.04
+  permissions:
+    contents: read
+  steps:
+    # The fixture runner supplies the package selection manifest in the workspace.
+    - name: Read released unit and selected asset digests
+      id: release
+      shell: bash
+      env:
+        UNIT: sample-tool
+      run: |
+        python3 - <<'PYTHON'
+        import json
+        import os
+        from pathlib import Path
+
+        release = json.loads(os.environ["RELEASE_JSON"])[os.environ["UNIT"]]
+        manifest = json.loads(Path("release-manifest.json").read_text(encoding="utf-8"))
+        artifacts = manifest["artifacts"]
+        assets = [{"name": a["filename"], "digest": "sha256:" + a["sha256"]} for a in artifacts]
+        output = open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8")
+        print("tag=" + release["tag"], file=output)
+        print("version=" + release["version"], file=output)
+        print("assets=" + json.dumps(assets), file=output)
+        output.close()
+        PYTHON
+
+    - name: Submit package selection
+      id: submit
+      # yamllint disable rule:line-length
+      uses: wyrd-company/repo.wyrd.foo/.github/actions/submit-release@8ed25fe1f262a4082036c98e4e01ca784ca3d431 # 0.1.0
+      # yamllint enable rule:line-length
+      with:
+        manifest: release-manifest.json
+        tag: ${{ steps.release.outputs.tag }}
+        version: ${{ steps.release.outputs.version }}
+        release-assets: ${{ steps.release.outputs.assets }}
+        app-client-id: ${{ secrets.REPO_WYRD_FOO_PUBLISHER_APP_ID }}
+        app-private-key: ${{ secrets.REPO_WYRD_FOO_PUBLISHER_PRIVATE_KEY }}

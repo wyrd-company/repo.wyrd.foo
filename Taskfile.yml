@@ -19,6 +19,11 @@ tasks:
     cmds:
       - python3 -m unittest discover -s tests -v
 
+  submission:guards:
+    desc: Prove submission guards in isolated fixture copies
+    cmds:
+      - python3 tests/verify_submission_guards.py
+
   integration:
     desc: Build and verify signed APT, RPM, and AUR fixture outputs
     cmds:
@@ -42,7 +47,7 @@ tasks:
   actions:check:
     desc: Parse GitHub Actions and Task configuration
     cmds:
-      - ryl check .github Taskfile.yml
+      - ryl check .github Taskfile.yml tests/fixtures/release-process
 
   docs:check:
     desc: Lint Markdown and structured documentation

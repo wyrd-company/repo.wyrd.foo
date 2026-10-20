@@ -109,7 +109,7 @@ class InboxAPI:
             }
         elif path == source + "/releases/tags/" + self.manifest["tag"]:
             result = self.release
-        elif path == source + "/releases/12/assets":
+        elif path.startswith(source + "/releases/") and path.endswith("/assets"):
             page = int(query["page"][0])
             result = self.assets[(page - 1) * 100 : page * 100]
         elif path == target + "/git/ref/heads/release-manifests":

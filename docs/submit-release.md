@@ -47,6 +47,13 @@ writes. See `test_each_asset_digest_and_name_is_bound_to_release_record`,
 `test_pinned_source_revision_is_required` in
 [the executable fixtures](../tests/test_submission_action.py).
 
+The [caller fixture](../tests/fixtures/release-process/caller.yml) shows the
+part publish-job value. It takes tag and version from `RELEASE_JSON` and
+passes the selected asset names and digests to the Action. The fixture assumes
+its package selection manifest is already in the workspace; the part that
+prepares that file is outside this Action. The fixture's version comment labels
+the initial Action interface; its commit pin selects the tested implementation.
+
 ## Credentials and authority
 
 Declare these credentials in the part's `credentials` interface:
@@ -57,7 +64,7 @@ Declare these credentials in the part's `credentials` interface:
   the package inbox App.
 
 An optional `environment` declaration must name the environment that stores
-those values; the publish job must use that environment. The caller fixture
+those values; the publish job must use that environment. The [credential fixture](../tests/fixtures/release-process/credentials.json)
 uses repository or organization secrets, with no environment.
 
 The Action requests a Contents-write installation token only for
