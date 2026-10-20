@@ -24,6 +24,15 @@ tasks:
     cmds:
       - python3 tests/verify_submission_guards.py
 
+  submission:qualify:
+    desc: Required release/UAT gate for published submission Action references
+    requires:
+      vars: [ PUBLICATION_CALLER ]
+    env:
+      PUBLICATION_CALLER: "{{.PUBLICATION_CALLER}}"
+    cmds:
+      - python3 tests/qualify_submission.py
+
   integration:
     desc: Build and verify signed APT, RPM, and AUR fixture outputs
     cmds:

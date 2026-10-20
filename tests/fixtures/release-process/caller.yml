@@ -29,10 +29,8 @@ job:
 
     - name: Submit package selection
       id: submit
-      # Integration fixture only; pin and version need a published main revision.
-      # yamllint disable rule:line-length
-      uses: wyrd-company/repo.wyrd.foo/.github/actions/submit-release@4c08302830febd7a6c747aa92f6007ab7526c9ae # 0.1.0
-      # yamllint enable rule:line-length
+      # Development fixture: resolve the Action from this checkout.
+      uses: ./.github/actions/submit-release
       with:
         manifest: release-manifest.json
         tag: ${{ steps.release.outputs.tag }}

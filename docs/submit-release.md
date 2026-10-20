@@ -49,13 +49,32 @@ writes. See `test_each_asset_digest_and_name_is_bound_to_release_record`,
 `test_pinned_source_revision_is_required` in
 [the executable fixtures](../tests/test_submission_action.py).
 
-The [caller fixture](../tests/fixtures/release-process/caller.yml) shows the
-part publish-job value. It takes tag and version from `RELEASE_JSON`; the
-Action fetches release asset names and digests from GitHub. The fixture assumes
-its package selection manifest is already in the workspace; the part that
-prepares that file is outside this Action. This integration fixture uses a
-branch-local pin and a provisional version comment, not a published tag.
-Production callers need a commit on `main` and its released version comment.
+The [consumer example](examples/submit-release.yml) shows the part publish-job
+value. It takes tag and version from `RELEASE_JSON`; the Action fetches release
+asset names and digests from GitHub. The example assumes its package selection
+manifest is already in the workspace; the part that prepares that file is
+outside this Action.
+
+The example's `PUBLISHED_MAIN_SHA` and `RELEASE_TAG` are unqualified placeholders.
+Before using it, select an approved published release whose tag peels to a commit
+on remote `main`, and substitute its full SHA and exact bare tag. The reference
+form is
+
+```text
+wyrd-company/repo.wyrd.foo/.github/actions/submit-release@<main-SHA> # <release-tag>
+```
+
+The publication part in `wyrd-company/.github` must use that same reference.
+Run the required [release/UAT qualification gate](../CONTRIBUTING.md#submission-action-releaseuat-gate)
+against the rendered publication workflow before accepting either reference.
+Tag and release publication retain the user's approval requirement.
+
+The separate [development caller fixture](../tests/fixtures/release-process/caller.yml)
+selects the Action in-tree. It needs no published pin or branch-only Git object.
+`test_published_example_agrees_with_development_caller` proves the example and
+fixture agree apart from their Action references; qualification proves the
+published runtime agrees with the checkout. No published release identity is
+claimed by the development fixture.
 
 ## Credentials and authority
 

@@ -9,6 +9,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -28,14 +29,14 @@ class ContractTests(unittest.TestCase):
         self.action_text = (ROOT / ACTION_PATH).read_text()
         self.action = yaml.safe_load(self.action_text)
 
-    def test_caller_validates_against_pinned_publish_job_schema(self):
-        # The design validates the pin plus version comment before YAML strips it.
+    def test_in_tree_caller_validates_against_publish_job_schema(self):
+        # Preserve external version comments; in-tree Actions need no Git pin.
         contribution = copy.deepcopy(self.caller)
         pins = re.findall(r"uses: (.+)$", self.caller_text, re.MULTILINE)
         for step, pin in zip(
             (s for s in contribution["job"]["steps"] if "uses" in s), pins, strict=True
         ):
-            self.assertRegex(pin, r"@[0-9a-f]{40} # [0-9]+\.[0-9]+\.[0-9]+$")
+            self.assertEqual(pin, "./.github/actions/submit-release")
             step["uses"] = pin
         schema = json.loads((FIXTURES / "schemas/publish-job.schema.json").read_text())
         Draft202012Validator.check_schema(schema)
@@ -74,21 +75,50 @@ class ContractTests(unittest.TestCase):
                 source["sha256"],
             )
 
-    def test_caller_pin_contains_the_runtime_exercised_by_fixtures(self):
-        pin = self.caller["job"]["steps"][-1]["uses"]
-        self.assertTrue(
-            pin.startswith("wyrd-company/repo.wyrd.foo/.github/actions/submit-release@")
-        )
-        revision = pin.rsplit("@", 1)[1]
-        for relative in (
-            ACTION_PATH,
-            "scripts/submit-release.py",
-            "scripts/repository.py",
-        ):
-            pinned = subprocess.check_output(
-                ["git", "-C", str(ROOT), "show", revision + ":" + relative]
+    def test_in_tree_caller_executes_checked_out_action_runtime(self):
+        selected = self.caller["job"]["steps"][-1]["uses"]
+        self.assertEqual(selected, "./.github/actions/submit-release")
+        action_dir = ROOT / selected
+        action = yaml.safe_load((action_dir / "action.yml").read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            # Observe the actual Bash invocation without issuing GitHub requests.
+            python = work / "python3"
+            python.write_text(
+                "#!" + sys.executable + "\n"
+                "import json, os, pathlib, sys\n"
+                "pathlib.Path(os.environ['INVOCATION']).write_text(json.dumps(sys.argv[1:]))\n"
             )
-            self.assertEqual(pinned, (ROOT / relative).read_bytes())
+            python.chmod(0o755)
+            output = work / "invocation.json"
+            subprocess.run(
+                ["bash", "-euo", "pipefail", "-c", action["runs"]["steps"][-1]["run"]],
+                env={
+                    **os.environ,
+                    "PATH": str(work) + os.pathsep + os.environ["PATH"],
+                    "GITHUB_ACTION_PATH": str(action_dir),
+                    "INVOCATION": str(output),
+                },
+                check=True,
+            )
+            arguments = json.loads(output.read_text())
+        self.assertEqual(len(arguments), 1)
+        runtime = Path(arguments[0]).resolve()
+        # Compare with the module actually exercised by the behavioral fixtures.
+        from test_submission_action import submission
+
+        self.assertEqual(runtime, Path(submission.__file__).resolve())
+        self.assertEqual(
+            Path(sys.modules["repository"].__file__).resolve(),
+            runtime.parent / "repository.py",
+        )
+
+    def test_published_example_agrees_with_development_caller(self):
+        example = yaml.safe_load(
+            (ROOT / "docs/examples/submit-release.yml").read_text()
+        )
+        example["job"]["steps"][-1]["uses"] = self.caller["job"]["steps"][-1]["uses"]
+        self.assertEqual(example, self.caller)
 
     def test_caller_reads_parent_release_environment_without_interpolation(self):
         release = {
