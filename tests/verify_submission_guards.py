@@ -270,6 +270,13 @@ MUTATIONS = [
         "contract:test_caller_validates_against_pinned_publish_job_schema",
     ),
     (
+        "recommended caller omits asset snapshot",
+        "tests/fixtures/release-process/caller.yml",
+        "        manifest: release-manifest.json",
+        "        manifest: release-manifest.json\n        release-assets: '[]'",
+        "contract:test_caller_reads_parent_release_environment_without_interpolation",
+    ),
+    (
         "parent release input",
         "tests/fixtures/release-process/caller.yml",
         'release["version"]',
