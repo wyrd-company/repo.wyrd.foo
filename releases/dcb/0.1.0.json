@@ -1,0 +1,86 @@
+{
+  "artifacts": [
+    {
+      "arch": "amd64",
+      "filename": "dcb_0.1.0_linux_x86_64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "4ecec7b8a7ce8cd51e11bfb5ac6f04f2ec6df4632a09a35b53928edeb1dd49d9",
+      "url": "https://github.com/wyrd-company/devcontainer-builder/releases/download/0.1.0/dcb_0.1.0_linux_x86_64.tar.gz"
+    },
+    {
+      "arch": "amd64",
+      "filename": "dcb_0.1.0_linux_x86_64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "899e0171fd9bcfa80d60ed457c0bb52f81ea3cce16c32e81d8a71fa23d97f7a0",
+      "url": "https://github.com/wyrd-company/devcontainer-builder/releases/download/0.1.0/dcb_0.1.0_linux_x86_64.deb"
+    },
+    {
+      "arch": "amd64",
+      "filename": "dcb_0.1.0_linux_x86_64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "334e48ef91d14650394349c01882f7892718495f464a5d40d9377a90fd40b605",
+      "url": "https://github.com/wyrd-company/devcontainer-builder/releases/download/0.1.0/dcb_0.1.0_linux_x86_64.rpm"
+    },
+    {
+      "arch": "arm64",
+      "filename": "dcb_0.1.0_linux_aarch64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "ccafca00014a8d6e8986648445eccdac5494a3b3c08b76aac26d6dd0b24320b9",
+      "url": "https://github.com/wyrd-company/devcontainer-builder/releases/download/0.1.0/dcb_0.1.0_linux_aarch64.tar.gz"
+    },
+    {
+      "arch": "arm64",
+      "filename": "dcb_0.1.0_linux_aarch64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "8fac273ebd3f8d1a2f19661c44b0854929bc205dd5d1c086d8c8c0fe3753168c",
+      "url": "https://github.com/wyrd-company/devcontainer-builder/releases/download/0.1.0/dcb_0.1.0_linux_aarch64.deb"
+    },
+    {
+      "arch": "arm64",
+      "filename": "dcb_0.1.0_linux_aarch64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "8c5aea7b76f67bb239b7cd2178586f68b0eb2c5e73109d803ef464a4517b9748",
+      "url": "https://github.com/wyrd-company/devcontainer-builder/releases/download/0.1.0/dcb_0.1.0_linux_aarch64.rpm"
+    }
+  ],
+  "package": {
+    "binary": "dcb",
+    "description": "Build and run development containers",
+    "homepage": "https://github.com/wyrd-company/devcontainer-builder",
+    "license": "MIT",
+    "maintainer": "Wyrd Company <support@wyrd.company>",
+    "name": "dcb"
+  },
+  "product": "dcb",
+  "publish": {
+    "apt": {
+      "component": "main",
+      "suite": "stable"
+    },
+    "aur": {
+      "package": "dcb-bin"
+    },
+    "rpm": {
+      "channel": "stable"
+    }
+  },
+  "schema_version": 1,
+  "source": {
+    "commit": "5ca13fc5c200417801b3dff2635cc83c5cec8df8",
+    "repository": "wyrd-company/devcontainer-builder"
+  },
+  "tag": "0.1.0",
+  "version": "0.1.0"
+}
