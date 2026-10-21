@@ -48,14 +48,20 @@ Intentional does not create that GitHub Release or deploy the publisher service.
 
 For the first release, the approved source pull request establishes the initial
 unit configuration and Change Intent. After that merge, measure the release
-from the reviewed `main` commit. If a baseline is missing, create and verify
-the candidate baseline only in a disposable clone, then run `intentional
-status`, `intentional check`, and `intentional plan` there. Save the command
-outputs, plan digest, computed version, and reviewed commit. Do not push the
-candidate tag. Do not carry first-release values into later releases; measure
-each later release from its current `main` and plan output.
+from the reviewed `main` commit. If a baseline is missing, create and verify the
+candidate baseline only in a disposable clone, then run `intentional status`,
+`intentional check`, and `intentional plan` there. Save the command outputs,
+plan digest, computed version, and reviewed commit. Do not push the candidate
+tag. Do not carry first-release values into later releases; measure each later
+release from its current `main` and plan output.
 
-Before public release operations, Bob may approve a release approval naming the
+Save each exact `intentional plan` output at an explicit absolute
+operator-selected path outside every source, release, and scratch
+checkout. For example, `/tmp/repo-wyrd-foo-release-plan.json`. Record the path
+with the plan measurement and keep that file available for the tag step. Never
+put a plan file inside a checkout that will be staged for tree comparison.
+
+Before public release operations, Bob may approve a release plan naming the
 reviewed source tree, exact version, any baseline tag, and the ordered public
 operations, based on that measurement. After approval, create and verify the
 baseline on the reviewed `main` commit if needed, then rerun status and plan.
@@ -82,46 +88,76 @@ Use this order for the first release and each later Action release:
    with `intentional tag --baseline --version submission-action=<baseline>` and
    `intentional verify <baseline> --json`. A baseline is not a release and has
    no GitHub Release. Push it only if that operation is named in the approval.
-   Run `intentional check`, then rerun `intentional status` and `intentional
-   plan`; confirm the output still matches the approval.
-2. Save the approved `intentional plan` output as `release-plan.json`. Run
-   `intentional apply --dry-run`, then `intentional apply`. Inspect the
-   generated changelog and consumed intent. Commit only those generated
-   release changes in one release pull request.
+   Run `intentional check`, then rerun `intentional status` and
+   `intentional plan`; confirm the output still matches the approval and
+   save it at the recorded external plan path.
+2. Run `intentional apply --dry-run`, then `intentional apply`. Inspect the
+   generated changelog and consumed intent. Commit only those generated release
+   changes in one release pull request.
 3. Before Bob merges the release pull request, read remote `main` again and
-   confirm its commit is exactly the source commit recorded in
-   `release-plan.json`. The apply commit must be that source commit's direct
-   child, with no merge commit. If `main` moved before the merge, do not merge
-   this release pull request. Discard its saved plan and release branch, then
-   rebuild the release branch from the new `main`, repeat the measurement and
-   apply steps, and prepare a new release pull request. Renew approval for the
-   new reviewed tree, plan digest, version, and ordered public operations.
-   Do not force a stale plan onto `main`.
+   confirm its commit is exactly the source commit recorded in the saved plan.
+   The apply commit must be that source commit's direct child, with no merge
+   commit. If remote `main` moved before the merge, do not merge this release
+   pull request. Discard its saved plan and release branch, then rebuild the
+   release branch from the new `main`, repeat the measurement and apply steps,
+   and prepare a new release pull request. Renew Bob's approval for the new
+   reviewed tree, plan digest, version, and ordered public operations. Do not
+   force a stale plan onto `main`.
 4. After the release pull request merges, record the merged release commit `M`
    and its direct parent `X`. If `X` is the source commit in the approved plan,
-   continue with that plan. If `X` differs because a squash or rebase merge
-   landed after `main` moved, the old plan must fail closed. Do not re-plan at
-   `M`: the merge has consumed the intent, so a plan at `M` has no release
-   units. Instead, make a disposable checkout at `X`, with the existing
-   baseline tags available. Run `intentional check`, `intentional status`, and
-   `intentional plan` there. Confirm the new plan contains the release that
-   was applied in `M`. Run `intentional apply --dry-run`, then run
-   `intentional apply` only in that disposable checkout. Stage its complete
-   result there and compare its tree ID with `M`'s tree ID. The trees must
-   match exactly. If the plan is empty, the checks fail, or the trees differ,
-   stop and ask root how to proceed; do not apply, revert, or repair the
-   release on `main`.
+   keep that original plan in force. If `X` differs because a squash or rebase
+   merge landed after `main` moved, treat the old plan as stale. From a checkout
+   at `M`, confirm the old plan refuses with
+   `intentional tag --plan <old-plan-path> --dry-run`. Do not select a plan made
+   at `M`: the merge consumed the intent, so that plan has no release units.
+   Instead, make a disposable checkout at `X`, with the existing baseline tags
+   available. Run `intentional check`, `intentional status`, and
+   `intentional plan` there, saving the new plan outside every scratch checkout
+   at a new absolute path. Confirm that it contains the release applied in
+   `M`. Run `intentional apply --dry-run`, then run `intentional apply` only in
+   that disposable checkout. Run `task docs:check` on its generated tree. Stage
+   the complete generated result there and compare its tree ID with `M`'s tree
+   ID; the trees must match exactly. If the old plan does not refuse, the new
+   plan is empty, the checks fail, or the trees differ, stop and contact Bob or
+   the repository maintainer. Do not apply, revert, or repair the release on
+   `main`.
 
    A plan measured at `X` has a new source commit and digest. Renew Bob's
    approval for that source, digest, version, merged release commit `M`, and
-   ordered public operations. Re-read remote `main` before tagging and confirm
-   `M` is still in its history. From a checkout at `M`, preview the primary
-   tag with `intentional tag --plan release-plan.json --dry-run`, then create
-   it with the same command without `--dry-run`. Verify it with
-   `intentional verify <tag> --json`; confirm that it peels to `M` on remote
-   `main`; then push that exact tag only if the renewed release approval names
-   that push. Never tag `M` using the stale plan from before the merge.
-5. Create a published GitHub Release for the same bare tag and version after
+   ordered public operations. The unchanged normal plan keeps its existing
+   approval when its reviewed tree, digest, version, and operations still
+   match.
+5. Use one tag procedure for either plan path: the approved original plan when
+   `X` is its source commit, or the renewed recovery plan when stale-merge
+   recovery was required. Check out `M` and set `TAG` to the bare tag in the
+   plan. Refresh the remote-tracking ref with
+   `git fetch origin refs/heads/main:refs/remotes/origin/main`, then confirm
+   `git merge-base --is-ancestor "$M" origin/main` succeeds. Preview the
+   primary tag from the plan in force with
+   `intentional tag --plan <plan-path> --dry-run`. Confirm that the version and
+   tag match the applicable Bob approval. Immediately before creating the tag,
+   refresh `origin/main` with the same fetch command and confirm the ancestry
+   command succeeds again. Then run `intentional tag --plan <plan-path>` and
+   verify it with
+   `intentional verify $TAG --json`. Confirm the local tag peels to exactly `M`.
+   Push only that tag, and only when the currently valid Bob approval names the
+   push:
+
+   ```console
+   git push origin "refs/tags/$TAG:refs/tags/$TAG"
+   ```
+
+   Read the pushed tag back with
+   `git ls-remote --tags origin "refs/tags/$TAG" "refs/tags/$TAG^{}"`.
+   Confirm that the remote tag object ID matches `git rev-parse
+   refs/tags/$TAG` and that its peeled ID matches `git rev-parse
+   refs/tags/$TAG^{}` and equals `M`. Fetch remote `main` again with the same
+   fetch command and confirm the ancestry command still succeeds. Stop if a
+   remote tag row is missing or does not match. The normal path uses its
+   unchanged approval; the recovery path
+   uses its renewed approval. Never tag `M` with the stale plan from before the
+   merge.
+6. Create a published GitHub Release for the same bare tag and version after
    the primary tag is pushed. Read it back and confirm its tag, reviewed source
    commit, and published (not draft) state. The unit requires this release
    record. No workflow in this repository creates it. The existing
@@ -129,7 +165,7 @@ Use this order for the first release and each later Action release:
    `release-manifest` or `workflow_dispatch`; a `main` merge or tag push does
    not start it. Recheck the actual workflow triggers on target `main` before
    seeking release approval.
-6. Once the approved primary tag and its GitHub Release are available, prepare
+7. Once the approved primary tag and its GitHub Release are available, prepare
    pin updates in two repositories: update `docs/examples/submit-release.yml`
    here, and update the repo.wyrd.foo publication part in `wyrd-company/.github`.
    Use the same full `main` commit SHA and exact bare tag in both. Edit the
@@ -141,15 +177,15 @@ Use this order for the first release and each later Action release:
    task submission:qualify PUBLICATION_CALLER=/path/to/rendered-release.yml
    ```
 
-   The gate must report `QUALIFICATION_RESULT=PASS` before either pin update
-   is merged. Submit one pull request in each repository for Bob's review and
+   The gate must report `QUALIFICATION_RESULT=PASS` before either pin update is
+   merged. Submit one pull request in each repository for Bob's review and
    merge. Keep the example placeholders until the approved tag and GitHub
    Release exist.
 
 The release approval must name each public baseline or release tag push and
 GitHub Release creation. Agents may perform only those named operations after
-approval. Afterward, record the exact tag, peeled commit, version, and
-published release readback. Never treat a local tag as public qualification.
+approval. Afterward, record the exact tag, peeled commit, version, and published
+release readback. Never treat a local tag as public qualification.
 
 ## Submission Action release/UAT gate
 
