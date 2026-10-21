@@ -35,6 +35,74 @@ runtime commit, branch pin, or network fetch is needed for development checks.
 The schema provenance file records the source revision and digests; update it
 only when adopting a new contract schema.
 
+## Release the Submission Action
+
+The `submission-action` release unit covers `.github/actions/submit-release`
+and the runtime files `scripts/submit-release.py` and `scripts/repository.py`.
+It has no version projections. Its primary tag is the bare semantic version,
+and `release-record: required` means each release tag must have a published
+GitHub Release with the same tag. The measured first release plan is `0.1.0`
+from baseline `0.0.0`; the approved source tree and current plan must confirm
+those values before apply. Intentional writes neither the GitHub Release nor a
+publisher-service deployment.
+
+Before a public release operation, Bob approves a release record that names the
+reviewed source tree, exact version, any required baseline tag, and the ordered
+public operations. That approval covers only the named operations. If the
+source tree, version, or operation order changes, stop and request approval for
+the revised release record. Bob retains final review and merge authority for
+every pull request to `main`.
+
+Use this order for the first release and every later Action release:
+
+1. Bob reviews and merges the prepared source pull request to `main`.
+2. Check out the merged `main` commit, fetch its tags, and run
+   `intentional status`. If the unit has no matching baseline tag, preview it
+   with `intentional tag --baseline --version submission-action=0.0.0
+   --dry-run`. After review, create it with the same command without
+   `--dry-run`, then verify it with `intentional verify 0.0.0 --json`. A
+   baseline is not a release and needs no GitHub Release. Push it only when the
+   approved release record names that public tag operation. Run
+   `intentional check` after baseline verification.
+3. Save `intentional plan` output as `release-plan.json`. Review its digest,
+   source tree, release notes, and computed version against the approved
+   release record. Run `intentional apply --dry-run`, then `intentional apply`.
+   Inspect the changelog and consumed intent. Submit those generated changes
+   in a pull request; Bob reviews and merges it before the release tag is
+   made.
+4. From the merged release commit, preview the primary tag with
+   `intentional tag --plan <saved-plan> --dry-run`, then create it with the same
+   command without `--dry-run`. Verify it with
+   `intentional verify <tag> --json`. Confirm that it peels to the reviewed
+   commit on remote `main`, then push that exact tag after approval.
+5. Create a published GitHub Release for the same bare tag and version. Read it
+   back and confirm its tag name, reviewed source commit, and published (not
+   draft) state. This is required by the unit policy; no workflow in this
+   repository creates the release record. The existing `publish.yml` workflow
+   starts on `repository_dispatch` with event `release-manifest` or
+   `workflow_dispatch`; a `main` merge or tag push does not start it.
+6. After the real tag and GitHub Release are available, update a candidate
+   `docs/examples/submit-release.yml` and the rendered publication workflow to
+   use the same full main commit SHA and exact bare tag:
+
+   ```text
+   wyrd-company/repo.wyrd.foo/.github/actions/submit-release@<main-SHA> # <tag>
+   ```
+
+   Render the publication workflow and run
+   `task submission:qualify PUBLICATION_CALLER=<rendered-workflow>`. The gate
+   must report `QUALIFICATION_RESULT=PASS` before either pin update is merged.
+   Submit both pin updates in a pull request for Bob's review and merge. Keep
+   the example's placeholders until the actual approved tag and release record
+   exist.
+
+The release authorization must identify each public tag push and GitHub Release
+creation. Agents may perform those named operations after approval without a
+separate command-by-command approval. Recheck the workflow triggers on the
+target `main` before approval because a later workflow change can add a push
+side effect. The submission Action release does not deploy the publisher
+service.
+
 ## Submission Action release/UAT gate
 
 The consumer example is `docs/examples/submit-release.yml`. Its explicit
