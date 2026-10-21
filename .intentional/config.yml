@@ -1,0 +1,18 @@
+$schema: https://intentional.foo/schemas/0.2/config
+contract: contract-1
+settings:
+  internal-dependency-bump: patch
+  pre-1-0-bump-mapping: compatibility
+discovery:
+  excluded-paths:
+    - detector: go-module
+      path: tests/fixtures/release-project/go.mod
+      evidence-digest: sha256:47bafdbafd7db6a959e3a90dab9ba13932712929911e8b99f168a4c1c5664d9f
+release-units:
+  submission-action:
+    path: .github/actions/submit-release
+    tags:
+      primary:
+        role: primary
+        template: '{version}'
+    release-record: required

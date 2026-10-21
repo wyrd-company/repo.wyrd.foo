@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wyrd-company/.github/blob/main/release/schemas/publish-job.schema.json",
+  "title": "Release-process v1 publication job contribution",
+  "description": "Validates the value of one contribution to the build_jobs, publish_jobs, or verify_jobs extension point of contract release-process version 1. The contribution key is the GitHub job id. The parent owns needs, the release gate, and the reserved RELEASE_ environment.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["units", "job"],
+  "properties": {
+    "units": {
+      "description": "Release Unit ids this job serves, separated by one space. The job runs when the run releases at least one of them.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*( [a-z0-9][a-z0-9._-]*)*$"
+    },
+    "if": {
+      "description": "An extra GitHub expression, written without ${{ }}. The parent joins it to the release gate with &&. It cannot call a status function.",
+      "type": "string",
+      "minLength": 1,
+      "allOf": [
+        { "not": { "pattern": "\\$\\{\\{" } },
+        { "not": { "pattern": "\\b(always|success|failure|cancelled)\\s*\\(" } }
+      ]
+    },
+    "job": { "$ref": "#/$defs/job" }
+  },
+  "$defs": {
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runs-on", "permissions", "steps"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "runs-on": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          ]
+        },
+        "permissions": { "$ref": "#/$defs/permissions" },
+        "environment": { "$ref": "#/$defs/environment-name" },
+        "env": { "$ref": "#/$defs/env" },
+        "defaults": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "run": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "shell": { "type": "string" },
+                "working-directory": { "type": "string" }
+              }
+            }
+          }
+        },
+        "timeout-minutes": { "type": "integer", "minimum": 1, "maximum": 360 },
+        "strategy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["matrix"],
+          "properties": {
+            "matrix": { "type": "object", "minProperties": 1 },
+            "fail-fast": { "type": "boolean" },
+            "max-parallel": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "container": { "type": ["string", "object"] },
+        "services": { "type": "object" },
+        "outputs": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/step" }
+        }
+      }
+    },
+    "permissions": {
+      "description": "Only the scopes a publication job may request. contents: write stays with the parent's release-record job.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "contents": { "const": "read" },
+        "actions": { "const": "read" },
+        "id-token": { "const": "write" },
+        "attestations": { "const": "write" },
+        "packages": { "enum": ["read", "write"] }
+      }
+    },
+    "environment-name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "env": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+        "not": { "pattern": "^(RELEASE_|GITHUB_)" }
+      },
+      "additionalProperties": { "type": ["string", "number", "boolean"] }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["uses"], "not": { "required": ["run"] } },
+        { "required": ["run"], "not": { "required": ["uses"] } }
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "if": {
+          "type": "string",
+          "minLength": 1,
+          "not": { "pattern": "\\$\\{\\{" }
+        },
+        "uses": {
+          "description": "A pinned action reference with its version comment. The parent writes it unquoted, so the comment becomes a YAML comment.",
+          "type": "string",
+          "pattern": "^(\\./[A-Za-z0-9_./-]+|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(/[A-Za-z0-9_./-]+)?@[0-9a-f]{40} # v?[0-9]+(\\.[0-9]+){0,2}([-+][0-9A-Za-z.-]+)?)$"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "number", "boolean"] }
+        },
+        "run": {
+          "description": "A script. It reads values from env, never from ${{ }}.",
+          "type": "string",
+          "minLength": 1,
+          "not": { "pattern": "\\$\\{\\{" }
+        },
+        "shell": { "type": "string" },
+        "working-directory": { "type": "string" },
+        "env": { "$ref": "#/$defs/env" },
+        "timeout-minutes": { "type": "integer", "minimum": 1, "maximum": 360 }
+      }
+    }
+  }
+}
