@@ -38,80 +38,111 @@ only when adopting a new contract schema.
 ## Release the Submission Action
 
 The `submission-action` release unit covers `.github/actions/submit-release`
-and the runtime files `scripts/submit-release.py` and `scripts/repository.py`.
-It has no version projections. Its primary tag is the bare semantic version,
-and `release-record: required` means each release tag must have a published
-GitHub Release with the same tag. The measured first release plan is `0.1.0`
-from baseline `0.0.0`; the approved source tree and current plan must confirm
-those values before apply. Intentional writes neither the GitHub Release nor a
-publisher-service deployment.
+and all three runtime files: `.github/actions/submit-release/action.yml`,
+`scripts/submit-release.py`, and `scripts/repository.py`. The last file is also
+used by the publisher workflow. Every change to any of these three files needs
+a `submission-action` Change Intent. The unit has no version projections. Its
+primary tag is a bare semantic version, and `release-record: required` means
+each release tag must have a published GitHub Release with the same tag.
+Intentional does not create that GitHub Release or deploy the publisher service.
 
-Before a public release operation, Bob approves a release record that names the
-reviewed source tree, exact version, any required baseline tag, and the ordered
-public operations. That approval covers only the named operations. If the
-source tree, version, or operation order changes, stop and request approval for
-the revised release record. Bob retains final review and merge authority for
-every pull request to `main`.
+For the first release, the approved source pull request establishes the initial
+unit configuration and Change Intent. After that merge, measure the release
+from the reviewed `main` commit. If a baseline is missing, create and verify
+the candidate baseline only in a disposable clone, then run `intentional
+status`, `intentional check`, and `intentional plan` there. Save the command
+outputs, plan digest, computed version, and reviewed commit. Do not push the
+candidate tag. Do not carry first-release values into later releases; measure
+each later release from its current `main` and plan output.
 
-Use this order for the first release and every later Action release:
+Before public release operations, Bob may approve a release approval naming the
+reviewed source tree, exact version, any baseline tag, and the ordered public
+operations, based on that measurement. After approval, create and verify the
+baseline on the reviewed `main` commit if needed, then rerun status and plan.
+If the tree, plan digest, version, or operation order differs from the
+approval, stop before apply or publication and seek approval for the revised
+release. Approval covers only the named operations. Agents may perform the
+approved operations without separate approval for each routine command. Bob
+retains final review and merge authority for each pull request to `main`.
 
-1. Bob reviews and merges the prepared source pull request to `main`.
-2. Check out the merged `main` commit, fetch its tags, and run
-   `intentional status`. If the unit has no matching baseline tag, preview it
-   with `intentional tag --baseline --version submission-action=0.0.0
-   --dry-run`. After review, create it with the same command without
-   `--dry-run`, then verify it with `intentional verify 0.0.0 --json`. A
-   baseline is not a release and needs no GitHub Release. Push it only when the
-   approved release record names that public tag operation. Run
-   `intentional check` after baseline verification.
-3. Save `intentional plan` output as `release-plan.json`. Review its digest,
-   source tree, release notes, and computed version against the approved
-   release record. Run `intentional apply --dry-run`, then `intentional apply`.
-   Inspect the changelog and consumed intent. Submit those generated changes
-   in a pull request; Bob reviews and merges it before the release tag is
-   made.
-4. From the merged release commit, preview the primary tag with
-   `intentional tag --plan <saved-plan> --dry-run`, then create it with the same
-   command without `--dry-run`. Verify it with
-   `intentional verify <tag> --json`. Confirm that it peels to the reviewed
-   commit on remote `main`, then push that exact tag after approval.
-5. Create a published GitHub Release for the same bare tag and version. Read it
-   back and confirm its tag name, reviewed source commit, and published (not
-   draft) state. This is required by the unit policy; no workflow in this
-   repository creates the release record. The existing `publish.yml` workflow
-   starts on `repository_dispatch` with event `release-manifest` or
-   `workflow_dispatch`; a `main` merge or tag push does not start it.
-6. After the real tag and GitHub Release are available, update a candidate
-   `docs/examples/submit-release.yml` and the rendered publication workflow to
-   use the same full main commit SHA and exact bare tag:
+Use this order for the first release and each later Action release:
 
-   ```text
-   wyrd-company/repo.wyrd.foo/.github/actions/submit-release@<main-SHA> # <tag>
+1. Review and merge the prepared source pull request to `main`. Check out the
+   merged `main` commit and fetch its tags. Measure the plan as described above.
+   If the unit has no matching baseline tag, preview the baseline using the
+   measured baseline version:
+
+   ```console
+   intentional tag --baseline --version submission-action=<baseline> --dry-run
    ```
 
-   Render the publication workflow and run
-   `task submission:qualify PUBLICATION_CALLER=<rendered-workflow>`. The gate
-   must report `QUALIFICATION_RESULT=PASS` before either pin update is merged.
-   Submit both pin updates in a pull request for Bob's review and merge. Keep
-   the example's placeholders until the actual approved tag and release record
-   exist.
+   Include the reviewed tree, measured plan, version, any baseline tag, and
+   ordered public operations in the release approval before any public tag
+   push. After approval, create and verify the baseline on that `main` commit
+   with `intentional tag --baseline --version submission-action=<baseline>` and
+   `intentional verify <baseline> --json`. A baseline is not a release and has
+   no GitHub Release. Push it only if that operation is named in the approval.
+   Run `intentional check`, then rerun `intentional status` and `intentional
+   plan`; confirm the output still matches the approval.
+2. Save the approved `intentional plan` output as `release-plan.json`. Run
+   `intentional apply --dry-run`, then `intentional apply`. Inspect the
+   generated changelog and consumed intent. Commit only those generated
+   release changes in one release pull request.
+3. The saved plan binds to its source commit: the single apply commit must be
+   its direct child, with no merge commit. Bob's merge of the release pull
+   request must put that apply commit directly on `main`, with no other commit
+   between the planned source and apply commit. From the merged
+   release commit, preview the primary tag with
+   `intentional tag --plan release-plan.json --dry-run`, then create it with
+   the same command without `--dry-run`. Verify it with
+   `intentional verify <tag> --json`; confirm that it peels to the reviewed
+   commit on remote `main`; then push that exact tag only if the release
+   approval names that push.
+4. If `main` moves after planning and before the apply commit is merged, or if
+   the saved plan no longer names the direct parent of the apply commit, stop.
+   Discard the saved plan and release branch. Restart from the current `main`
+   at step 1 or 2, make a new plan and release pull request, and renew approval
+   for any changed tree, version, or ordered public operations. Do not force a
+   stale plan onto `main`.
+5. Create a published GitHub Release for the same bare tag and version after
+   the primary tag is pushed. Read it back and confirm its tag, reviewed source
+   commit, and published (not draft) state. The unit requires this release
+   record. No workflow in this repository creates it. The existing
+   `publish.yml` workflow starts on `repository_dispatch` with event
+   `release-manifest` or `workflow_dispatch`; a `main` merge or tag push does
+   not start it. Recheck the actual workflow triggers on target `main` before
+   seeking release approval.
+6. Once the approved primary tag and its GitHub Release are available, prepare
+   pin updates in two repositories: update `docs/examples/submit-release.yml`
+   here, and update the repo.wyrd.foo publication part in `wyrd-company/.github`.
+   Use the same full `main` commit SHA and exact bare tag in both. Edit the
+   publication part source and render its workflow; do not hand-edit the
+   rendered workflow. Set `PUBLICATION_CALLER` to that rendered workflow and
+   run:
 
-The release authorization must identify each public tag push and GitHub Release
-creation. Agents may perform those named operations after approval without a
-separate command-by-command approval. Recheck the workflow triggers on the
-target `main` before approval because a later workflow change can add a push
-side effect. The submission Action release does not deploy the publisher
-service.
+   ```console
+   task submission:qualify PUBLICATION_CALLER=/path/to/rendered-release.yml
+   ```
+
+   The gate must report `QUALIFICATION_RESULT=PASS` before either pin update
+   is merged. Submit one pull request in each repository for Bob's review and
+   merge. Keep the example placeholders until the approved tag and GitHub
+   Release exist.
+
+The release approval must name each public baseline or release tag push and
+GitHub Release creation. Agents may perform only those named operations after
+approval. Afterward, record the exact tag, peeled commit, version, and
+published release readback. Never treat a local tag as public qualification.
 
 ## Submission Action release/UAT gate
 
 The consumer example is `docs/examples/submit-release.yml`. Its explicit
 `PUBLISHED_MAIN_SHA` and `RELEASE_TAG` placeholders mean it is unqualified.
-Keep those placeholders until an approved release tag exists on the remote.
-Public tag and release publication require the user's approval.
+Keep them until an approved release tag and its GitHub Release exist on public
+`main`.
 
-After that release exists, replace the placeholders with its full main commit
-SHA and exact bare release tag. Set the publication part in `wyrd-company/.github`
+After publication, replace the placeholders with the full `main` commit SHA
+and exact bare release tag. Set the publication part in `wyrd-company/.github`
 to the identical reference:
 
 ```text
@@ -138,15 +169,16 @@ interruption cannot complete it. Named cases in
 `submission:guards` proves the load-bearing comparisons.
 
 Run this gate before accepting the published example or publication part at
-release/UAT. A green development `task check` does not qualify a public pin.
-Record the qualified SHA, tag, rendered publication file, and gate result in
-the release/UAT handoff. Until then, live published qualification is pending.
+release/UAT. Record the qualified SHA, tag, rendered publication file, and gate
+result in the release/UAT handoff. Until then, live published qualification is
+pending.
 
 To verify integration, export the committed tree to a new Git repository,
 commit it once on `main`, and clone only that `main` with `--no-local --no-tags`.
 Run `task check` and `task submission:guards` in that clone. Do not copy the
-original `.git` or fetch its task/epic branches. This simulates squash integration
-without keeping branch-only objects that could hide a self-reference.
+original `.git` or fetch its task/epic branches. This simulates squash
+integration without keeping branch-only objects that could hide a
+self-reference.
 
 ## Signing-key rotation
 
