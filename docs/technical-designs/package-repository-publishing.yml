@@ -4,7 +4,8 @@ relationships:
     - use-release-manifest-handoffs
 objective: >-
   Publish authenticated APT, RPM, and Arch Linux package metadata for Wyrd
-  Company products from immutable product release artifacts.
+  Company products from immutable product release artifacts, and authenticated
+  APT packages for selected upstream tools.
 background:
   current-design: >-
     Product repositories publish versioned GitHub Release artifacts. The public
@@ -107,6 +108,21 @@ proposed-design:
     inbox-update ruleset permits direct updates to release-manifests only from
     repo-wyrd-foo-publisher; that App bypass applies only to this ruleset and
     the branch-safety baseline still applies.
+  upstream-envconsul: >-
+    The main-branch envconsul workflow checks the latest stable HashiCorp release
+    daily and on manual dispatch. It verifies the SHA256SUMS signature against
+    HashiCorp's primary signing fingerprint
+    C874011F0AB405110D02105534365D9472D7468F, then verifies Linux amd64 and arm64 ZIP
+    digests before importing repository credentials. Each DEB contains the
+    upstream binary in /usr/bin/envconsul and its license in
+    /usr/share/doc/envconsul/copyright, with Debian revision -1. The workflow
+    restores the existing repository, rejects different bytes at an existing
+    package path, and reuses signed index generation and pointer-last R2 uploads.
+    It shares the product publisher's concurrency group and 30-minute job limit.
+    Both workflows use queue: max to retain pending publications. Identical
+    published packages are retained without regenerating indexes or uploading.
+    This publisher-owned
+    upstream flow does not use the product inbox or create RPM or AUR packages.
   apt-repository: >-
     DEB packages are retained beneath apt/pool. Each supported architecture has
     Packages and deterministic Packages.gz indexes beneath
