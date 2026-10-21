@@ -88,22 +88,39 @@ Use this order for the first release and each later Action release:
    `intentional apply --dry-run`, then `intentional apply`. Inspect the
    generated changelog and consumed intent. Commit only those generated
    release changes in one release pull request.
-3. The saved plan binds to its source commit: the single apply commit must be
-   its direct child, with no merge commit. Bob's merge of the release pull
-   request must put that apply commit directly on `main`, with no other commit
-   between the planned source and apply commit. From the merged
-   release commit, preview the primary tag with
-   `intentional tag --plan release-plan.json --dry-run`, then create it with
-   the same command without `--dry-run`. Verify it with
-   `intentional verify <tag> --json`; confirm that it peels to the reviewed
-   commit on remote `main`; then push that exact tag only if the release
-   approval names that push.
-4. If `main` moves after planning and before the apply commit is merged, or if
-   the saved plan no longer names the direct parent of the apply commit, stop.
-   Discard the saved plan and release branch. Restart from the current `main`
-   at step 1 or 2, make a new plan and release pull request, and renew approval
-   for any changed tree, version, or ordered public operations. Do not force a
-   stale plan onto `main`.
+3. Before Bob merges the release pull request, read remote `main` again and
+   confirm its commit is exactly the source commit recorded in
+   `release-plan.json`. The apply commit must be that source commit's direct
+   child, with no merge commit. If `main` moved before the merge, do not merge
+   this release pull request. Discard its saved plan and release branch, then
+   rebuild the release branch from the new `main`, repeat the measurement and
+   apply steps, and prepare a new release pull request. Renew approval for the
+   new reviewed tree, plan digest, version, and ordered public operations.
+   Do not force a stale plan onto `main`.
+4. After the release pull request merges, record the merged release commit `M`
+   and its direct parent `X`. If `X` is the source commit in the approved plan,
+   continue with that plan. If `X` differs because a squash or rebase merge
+   landed after `main` moved, the old plan must fail closed. Do not re-plan at
+   `M`: the merge has consumed the intent, so a plan at `M` has no release
+   units. Instead, make a disposable checkout at `X`, with the existing
+   baseline tags available. Run `intentional check`, `intentional status`, and
+   `intentional plan` there. Confirm the new plan contains the release that
+   was applied in `M`. Run `intentional apply --dry-run`, then run
+   `intentional apply` only in that disposable checkout. Stage its complete
+   result there and compare its tree ID with `M`'s tree ID. The trees must
+   match exactly. If the plan is empty, the checks fail, or the trees differ,
+   stop and ask root how to proceed; do not apply, revert, or repair the
+   release on `main`.
+
+   A plan measured at `X` has a new source commit and digest. Renew Bob's
+   approval for that source, digest, version, merged release commit `M`, and
+   ordered public operations. Re-read remote `main` before tagging and confirm
+   `M` is still in its history. From a checkout at `M`, preview the primary
+   tag with `intentional tag --plan release-plan.json --dry-run`, then create
+   it with the same command without `--dry-run`. Verify it with
+   `intentional verify <tag> --json`; confirm that it peels to `M` on remote
+   `main`; then push that exact tag only if the renewed release approval names
+   that push. Never tag `M` using the stale plan from before the merge.
 5. Create a published GitHub Release for the same bare tag and version after
    the primary tag is pushed. Read it back and confirm its tag, reviewed source
    commit, and published (not draft) state. The unit requires this release
