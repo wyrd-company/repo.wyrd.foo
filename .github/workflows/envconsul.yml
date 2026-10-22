@@ -1,0 +1,80 @@
+# relationships:
+#   implements: package-repository-publishing
+name: Publish envconsul for APT
+
+on:
+  schedule:
+    - cron: "43 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize with product releases while restoring and updating the same bucket.
+concurrency:
+  group: package-repository-publisher
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      AWS_DEFAULT_REGION: auto
+      AWS_EC2_METADATA_DISABLED: "true"
+    steps:
+      - name: Check out immutable publisher code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Install repository tooling
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes \
+          apt-utils ca-certificates createrepo-c curl dpkg-dev gnupg rpm unzip
+          scripts/install-aws-cli.sh
+
+      - name: Build DEBs from verified upstream binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/build-envconsul.py build artifacts
+
+      - name: Validate privileged configuration
+        env:
+          REPO_WYRD_FOO_GPG_KEY: ${{ secrets.REPO_WYRD_FOO_GPG_KEY }}
+          REPO_WYRD_FOO_S3_API: ${{ secrets.REPO_WYRD_FOO_S3_API }}
+        run: |
+          set -euo pipefail
+          python3 scripts/repository.py configure-r2 --github-env "$GITHUB_ENV"
+          scripts/import-signing-key.sh pubkey.gpg
+
+      - name: Restore published repository
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.REPO_WYRD_FOO_S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.REPO_WYRD_FOO_S3_SECRET }}
+        run: |
+          set -euo pipefail
+          mkdir -p public
+          aws s3 sync "s3://${R2_BUCKET}" public --endpoint-url "$R2_ENDPOINT" --only-show-errors
+
+      - name: Stage envconsul
+        id: stage
+        run: python3 scripts/build-envconsul.py stage artifacts public --github-output "$GITHUB_OUTPUT"
+
+      - name: Rebuild signed indexes
+        if: steps.stage.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          scripts/build-indexes.sh public
+
+      - name: Publish repository
+        if: steps.stage.outputs.changed == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.REPO_WYRD_FOO_S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.REPO_WYRD_FOO_S3_SECRET }}
+        run: scripts/publish-r2.sh public

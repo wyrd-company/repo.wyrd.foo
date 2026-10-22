@@ -28,6 +28,28 @@ sudo apt update
 a binary OpenPGP keyring for consumers that use a `.gpg` keyring path. Both
 forms have the same primary fingerprint.
 
+### envconsul
+
+After adding the APT repository, install envconsul with:
+
+```console
+sudo apt install envconsul
+```
+
+The **Publish envconsul for APT** workflow checks the latest stable
+[`hashicorp/envconsul` release](https://github.com/hashicorp/envconsul/releases)
+daily at 06:43 UTC and supports manual runs on `main`. It verifies HashiCorp's
+signed checksums and the Linux ZIP digests, then packages the upstream binaries
+and license for amd64 and arm64. Packages use the upstream version with Debian
+revision `-1`. Published package paths are immutable.
+
+The workflow uses the existing repository signing and R2 secrets. It shares the
+product publisher's concurrency group and preserves existing packages. RPM and
+AUR packages are not produced for envconsul.
+
+Both publishers queue pending runs and use the same 30-minute job limit.
+Already-published envconsul versions do not trigger index regeneration or uploads.
+
 ## RPM
 
 Install the repository definition:

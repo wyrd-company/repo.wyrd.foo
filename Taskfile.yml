@@ -24,6 +24,11 @@ tasks:
     cmds:
       - tests/run-integration.sh
 
+  envconsul:build:
+    desc: Build verified upstream envconsul DEBs for amd64 and arm64
+    cmds:
+      - python3 scripts/build-envconsul.py build artifacts
+
   aws-cli:smoke:
     desc: Install the pinned AWS CLI twice in one runner directory
     cmds:

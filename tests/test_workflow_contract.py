@@ -32,6 +32,28 @@ INTEGRATION = (ROOT / "tests" / "run-aur-integration.sh").read_text(encoding="ut
 
 
 class WorkflowContractTests(unittest.TestCase):
+    def test_envconsul_publisher_uses_existing_serialized_publication(self) -> None:
+        workflow = (ROOT / ".github/workflows/envconsul.yml").read_text()
+        self.assertIn("group: package-repository-publisher", workflow)
+        self.assertIn("queue: max", workflow)
+        self.assertIn("queue: max", WORKFLOW)
+        self.assertIn("cancel-in-progress: false", workflow)
+        self.assertIn("timeout-minutes: 30", workflow)
+        self.assertIn("github.ref == 'refs/heads/main'", workflow)
+        self.assertIn("ref: ${{ github.sha }}", workflow)
+        self.assertIn("persist-credentials: false", workflow)
+        self.assertIn('cron: "43 6 * * *"', workflow)
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertLess(
+            workflow.index("scripts/build-envconsul.py build"),
+            workflow.index("secrets.REPO_WYRD_FOO_GPG_KEY"),
+        )
+        self.assertLess(workflow.index("aws s3 sync"), workflow.index("scripts/build-envconsul.py stage"))
+        self.assertLess(workflow.index("scripts/build-indexes.sh"), workflow.index("scripts/publish-r2.sh"))
+        self.assertNotIn("publish-aur", workflow)
+        self.assertNotIn("AUR_PRIVATE_KEY", workflow)
+        self.assertEqual(workflow.count("if: steps.stage.outputs.changed == 'true'"), 2)
+
     def test_product_app_writes_only_the_inbox_flow(self) -> None:
         self.assertIn("ref: release-manifests", ACTION)
         self.assertIn("repository_dispatch", WORKFLOW)
