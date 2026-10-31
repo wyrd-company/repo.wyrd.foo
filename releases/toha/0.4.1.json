@@ -1,0 +1,86 @@
+{
+  "artifacts": [
+    {
+      "arch": "amd64",
+      "filename": "toha_0.4.1_linux_x86_64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "9683b39b18dd860b9403f6e911c590dff992fa3179323dd1bc96faca8b518161",
+      "url": "https://github.com/wyrd-company/toha/releases/download/0.4.1/toha_0.4.1_linux_x86_64.tar.gz"
+    },
+    {
+      "arch": "arm64",
+      "filename": "toha_0.4.1_linux_aarch64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "6e5434432c0cd550c168e6e70490e5554e241d1a9b153659defb3d21019c1b49",
+      "url": "https://github.com/wyrd-company/toha/releases/download/0.4.1/toha_0.4.1_linux_aarch64.tar.gz"
+    },
+    {
+      "arch": "amd64",
+      "filename": "toha_0.4.1_linux_x86_64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "840661b9ea60a820a9a32e3e264e9c919399be736c24920bf8599af2af06eefa",
+      "url": "https://github.com/wyrd-company/toha/releases/download/0.4.1/toha_0.4.1_linux_x86_64.deb"
+    },
+    {
+      "arch": "arm64",
+      "filename": "toha_0.4.1_linux_aarch64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "268f1d4d77deeba59ddee51eb55fbf77a1328648e1c00fbba593097a26e7fe19",
+      "url": "https://github.com/wyrd-company/toha/releases/download/0.4.1/toha_0.4.1_linux_aarch64.deb"
+    },
+    {
+      "arch": "amd64",
+      "filename": "toha_0.4.1_linux_x86_64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "d355eb339fc6b5733c2d3f2470e1f9c4bc8497d48be7d78fd4faa88af1d354dd",
+      "url": "https://github.com/wyrd-company/toha/releases/download/0.4.1/toha_0.4.1_linux_x86_64.rpm"
+    },
+    {
+      "arch": "arm64",
+      "filename": "toha_0.4.1_linux_aarch64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "c231e7c814cb3dad03784a8d8cbc2bf94412c0cde32e7b7e6f5a003b66c93082",
+      "url": "https://github.com/wyrd-company/toha/releases/download/0.4.1/toha_0.4.1_linux_aarch64.rpm"
+    }
+  ],
+  "package": {
+    "binary": "toha",
+    "description": "Generate projects and files from templates",
+    "homepage": "https://github.com/wyrd-company/toha",
+    "license": "Apache-2.0",
+    "maintainer": "Wyrd Company <support@wyrd.company>",
+    "name": "toha"
+  },
+  "product": "toha",
+  "publish": {
+    "apt": {
+      "component": "main",
+      "suite": "stable"
+    },
+    "aur": {
+      "package": "toha-bin"
+    },
+    "rpm": {
+      "channel": "stable"
+    }
+  },
+  "schema_version": 1,
+  "source": {
+    "commit": "b40611a09a02385a9ed9af004d27baf8542f07da",
+    "repository": "wyrd-company/toha"
+  },
+  "tag": "0.4.1",
+  "version": "0.4.1"
+}
