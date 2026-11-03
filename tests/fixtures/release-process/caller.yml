@@ -1,0 +1,39 @@
+# ---
+# relationships:
+#   references: package-repository-publishing
+# ---
+
+units: sample-tool
+job:
+  runs-on: ubuntu-24.04
+  permissions:
+    contents: read
+  steps:
+    # The fixture runner supplies the package selection manifest in the workspace.
+    - name: Read released unit
+      id: release
+      shell: bash
+      env:
+        UNIT: sample-tool
+      run: |
+        python3 - <<'PYTHON'
+        import json
+        import os
+
+        release = json.loads(os.environ["RELEASE_JSON"])[os.environ["UNIT"]]
+        output = open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8")
+        print("tag=" + release["tag"], file=output)
+        print("version=" + release["version"], file=output)
+        output.close()
+        PYTHON
+
+    - name: Submit package selection
+      id: submit
+      # Development fixture: resolve the Action from this checkout.
+      uses: ./.github/actions/submit-release
+      with:
+        manifest: release-manifest.json
+        tag: ${{ steps.release.outputs.tag }}
+        version: ${{ steps.release.outputs.version }}
+        app-client-id: ${{ secrets.REPO_WYRD_FOO_PUBLISHER_APP_ID }}
+        app-private-key: ${{ secrets.REPO_WYRD_FOO_PUBLISHER_PRIVATE_KEY }}

@@ -8,7 +8,6 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
-import os
 import subprocess
 import tempfile
 import unittest
@@ -94,6 +93,7 @@ class ManifestTests(unittest.TestCase):
     def test_confines_download_to_exact_github_release(self) -> None:
         for url in (
             "https://example.invalid/payload",
+            "https://example.invalid/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_x86_64.tar.gz",
             "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/other.rpm",
             "https://github.com/wyrd-company/sample-tool/releases/download/1.2.3/sample-tool_1.2.3_linux_x86_64.tar.gz?mutable=1",
         ):
@@ -142,26 +142,6 @@ class ManifestTests(unittest.TestCase):
                 "# Maintainer: Package Maintainers, Inc. <packages+aur@example.invalid>",
             )
             self.assertEqual(lines[1], "pkgname='sample-tool-bin'")
-
-    def test_submit_is_canonical_idempotent_and_immutable(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            source = root / "manifest.json"
-            source.write_text(json.dumps(self.manifest()), encoding="utf-8")
-            state, result = repository.submit_manifest(source, root / "target")
-            self.assertEqual((state, result), ("created", "releases/sample-tool/1.2.3.json"))
-            destination = root / "target" / result
-            self.assertEqual(destination.read_bytes(), repository.canonical_bytes(self.manifest()))
-            self.assertEqual(
-                repository.submit_manifest(source, root / "target"),
-                ("unchanged", "releases/sample-tool/1.2.3.json"),
-            )
-
-            changed = self.manifest()
-            changed["source"]["commit"] = "f" * 40
-            source.write_text(json.dumps(changed), encoding="utf-8")
-            with self.assertRaisesRegex(repository.ManifestError, "immutable release manifest"):
-                repository.submit_manifest(source, root / "target")
 
     def test_parses_only_full_r2_bucket_urls(self) -> None:
         self.assertEqual(
@@ -353,23 +333,6 @@ class ManifestTests(unittest.TestCase):
                 self.assertEqual(products[name]["publish"]["rpm"], {"channel": "stable"})
                 self.assertEqual(products[name]["publish"]["aur"]["package"], f"{name}-bin")
                 self.assertEqual("installation" in products[name]["publish"]["aur"], name in {"trowel", "wyrwood"})
-
-    def test_resolver_reuses_original_addition_for_unchanged_recovery(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            commit, path, _ = self.queue_commit(root, self.manifest())
-            (root / "later.txt").write_text("later\n", encoding="utf-8")
-            self.git(root, "add", "later.txt")
-            self.git(root, "commit", "--quiet", "-m", "later")
-            github_output = root / "github-output"
-            environment = os.environ | {"GITHUB_OUTPUT": str(github_output), "RESULT": path}
-            subprocess.run(
-                [str(ROOT / "scripts" / "resolve-inbox.sh")],
-                cwd=root,
-                env=environment,
-                check=True,
-            )
-            self.assertEqual(github_output.read_text(encoding="utf-8"), f"commit={commit}\n")
 
     def test_source_tag_must_resolve_to_declared_commit(self) -> None:
         manifest = self.manifest()

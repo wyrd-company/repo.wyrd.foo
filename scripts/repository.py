@@ -218,19 +218,6 @@ def canonical_bytes(manifest: dict[str, Any]) -> bytes:
     return (json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
 
 
-def submit_manifest(manifest_path: Path, repository_root: Path) -> tuple[str, str]:
-    manifest = load_manifest(manifest_path)
-    destination = repository_root / "releases" / manifest["product"] / f"{manifest['version']}.json"
-    content = canonical_bytes(manifest)
-    if destination.exists():
-        if destination.read_bytes() != content:
-            raise ManifestError(f"immutable release manifest already exists with different content: {destination}")
-        return "unchanged", str(destination.relative_to(repository_root))
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_bytes(content)
-    return "created", str(destination.relative_to(repository_root))
-
-
 def load_queued_manifest(repository_root: Path, relative_path: str) -> dict[str, Any]:
     manifest_path = repository_root / relative_path
     if manifest_path.is_symlink() or not manifest_path.is_file():
@@ -632,9 +619,6 @@ def main() -> int:
     validate.add_argument("manifest", type=Path)
     canonicalize = subparsers.add_parser("canonicalize")
     canonicalize.add_argument("manifest", type=Path)
-    submit = subparsers.add_parser("submit")
-    submit.add_argument("manifest", type=Path)
-    submit.add_argument("repository", type=Path)
     queue = subparsers.add_parser("validate-queue")
     queue.add_argument("repository", type=Path)
     queue.add_argument("commit")
@@ -660,9 +644,6 @@ def main() -> int:
             load_manifest(arguments.manifest)
         elif arguments.command == "canonicalize":
             sys.stdout.buffer.write(canonical_bytes(load_manifest(arguments.manifest)))
-        elif arguments.command == "submit":
-            state, path = submit_manifest(arguments.manifest, arguments.repository)
-            print(f"{state}\t{path}")
         elif arguments.command == "validate-queue":
             manifest = validate_queue_commit(
                 arguments.repository,

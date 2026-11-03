@@ -8,14 +8,38 @@ description: Commit one canonical package release manifest to repo.wyrd.foo
 
 inputs:
   manifest:
-    description: Path to the release manifest in the caller workspace
+    description: Path to the package selection manifest in the caller workspace
     required: true
+  tag:
+    description: Released unit tag (defaults to the manifest tag)
+    required: false
+  version:
+    description: Released unit version (defaults to the manifest version)
+    required: false
+  release-assets:
+    description: JSON array of release-record assets with name and sha256 digest
+    required: false
+
   app-client-id:
     description: Client ID of the repo.wyrd.foo publisher GitHub App
     required: true
   app-private-key:
     description: Private key of the repo.wyrd.foo publisher GitHub App
     required: true
+
+outputs:
+  submission-id:
+    description: Stable manifest path and canonical SHA-256 identity; not consumer visibility
+    value: ${{ steps.submit.outputs.submission-id }}
+  manifest-path:
+    description: Canonical path in the fixed inbox
+    value: ${{ steps.submit.outputs.manifest-path }}
+  inbox-commit:
+    description: Immutable commit containing this submission
+    value: ${{ steps.submit.outputs.inbox-commit }}
+  state:
+    description: created or unchanged
+    value: ${{ steps.submit.outputs.state }}
 
 runs:
   using: composite
@@ -30,44 +54,14 @@ runs:
         repositories: repo.wyrd.foo
         permission-contents: write
 
-    - name: Check out package repository
-      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      with:
-        repository: wyrd-company/repo.wyrd.foo
-        ref: release-manifests
-        token: ${{ steps.token.outputs.token }}
-        path: .repo-wyrd-foo
-        persist-credentials: false
-
-    - name: Validate and stage release manifest
+    - name: Verify release record and submit immutable manifest
       id: submit
       shell: bash
       env:
         MANIFEST: ${{ inputs.manifest }}
-      run: "$GITHUB_ACTION_PATH/../../../scripts/submit-action.sh"
-
-    - name: Commit release manifest
-      if: steps.submit.outputs.state == 'created'
-      shell: bash
-      env:
-        APP_SLUG: ${{ steps.token.outputs.app-slug }}
+        RELEASE_TAG: ${{ inputs.tag }}
+        RELEASE_VERSION: ${{ inputs.version }}
+        RELEASE_ASSETS: ${{ inputs.release-assets }}
+        SOURCE_TOKEN: ${{ github.token }}
         APP_TOKEN: ${{ steps.token.outputs.token }}
-        RESULT: ${{ steps.submit.outputs.path }}
-      working-directory: .repo-wyrd-foo
-      run: "$GITHUB_ACTION_PATH/../../../scripts/commit-release.sh"
-
-    - name: Resolve immutable inbox commit
-      id: inbox
-      shell: bash
-      env:
-        RESULT: ${{ steps.submit.outputs.path }}
-      working-directory: .repo-wyrd-foo
-      run: "$GITHUB_ACTION_PATH/../../../scripts/resolve-inbox.sh"
-
-    - name: Request package publication
-      shell: bash
-      env:
-        GH_TOKEN: ${{ steps.token.outputs.token }}
-        INBOX_COMMIT: ${{ steps.inbox.outputs.commit }}
-        MANIFEST_PATH: ${{ steps.submit.outputs.path }}
-      run: "$GITHUB_ACTION_PATH/../../../scripts/dispatch-release.sh"
+      run: python3 "$GITHUB_ACTION_PATH/../../../scripts/submit-release.py"
