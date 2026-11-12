@@ -1,0 +1,97 @@
+{
+  "artifacts": [
+    {
+      "arch": "amd64",
+      "filename": "trowel_0.3.0_linux_x86_64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "05a10ff51df10ad229eda3509c611ab8a7b8ef7f0835816b0f634cd7cb387202",
+      "url": "https://github.com/wyrd-company/trowel/releases/download/0.3.0/trowel_0.3.0_linux_x86_64.tar.gz"
+    },
+    {
+      "arch": "arm64",
+      "filename": "trowel_0.3.0_linux_aarch64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "e333d50b3f03a97f97d46c0629e2d10224b6f8288aff83f7314887e83f432fc7",
+      "url": "https://github.com/wyrd-company/trowel/releases/download/0.3.0/trowel_0.3.0_linux_aarch64.tar.gz"
+    },
+    {
+      "arch": "amd64",
+      "filename": "trowel_0.3.0_linux_x86_64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "5f76e72ba9cc3121b760196625f0a902d3ab236d09ad77ef5a2c666bcf73a234",
+      "url": "https://github.com/wyrd-company/trowel/releases/download/0.3.0/trowel_0.3.0_linux_x86_64.deb"
+    },
+    {
+      "arch": "arm64",
+      "filename": "trowel_0.3.0_linux_aarch64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "706e809207b27d99e461b0b66a3837328b6494f221679d381c52e7dc12bc3809",
+      "url": "https://github.com/wyrd-company/trowel/releases/download/0.3.0/trowel_0.3.0_linux_aarch64.deb"
+    },
+    {
+      "arch": "amd64",
+      "filename": "trowel_0.3.0_linux_x86_64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "bd5c110ea6dcbd5db090cb0d95691a6b961df5527fc405b909f233a43c3fbfb0",
+      "url": "https://github.com/wyrd-company/trowel/releases/download/0.3.0/trowel_0.3.0_linux_x86_64.rpm"
+    },
+    {
+      "arch": "arm64",
+      "filename": "trowel_0.3.0_linux_aarch64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "b9f744f343a1d9f1c34460ba8b58fbfb4c96aa50e6b7f12d1231499f03c93151",
+      "url": "https://github.com/wyrd-company/trowel/releases/download/0.3.0/trowel_0.3.0_linux_aarch64.rpm"
+    }
+  ],
+  "package": {
+    "binary": "trowel",
+    "description": "Relay HTTP webhooks into NATS JetStream and JetStream messages out to HTTP or commands",
+    "homepage": "https://github.com/wyrd-company/trowel",
+    "license": "Apache-2.0",
+    "maintainer": "Wyrd Company <support@wyrd.company>",
+    "name": "trowel"
+  },
+  "product": "trowel",
+  "publish": {
+    "apt": {
+      "component": "main",
+      "suite": "stable"
+    },
+    "aur": {
+      "installation": {
+        "files": {
+          "packaging/trowel.service": "/usr/lib/systemd/system/trowel.service"
+        },
+        "hooks": {
+          "post-install": "packaging/postinstall.sh",
+          "post-remove": "packaging/postremove.sh",
+          "pre-install": "packaging/preinstall.sh",
+          "pre-remove": "packaging/preremove.sh"
+        }
+      },
+      "package": "trowel-bin"
+    },
+    "rpm": {
+      "channel": "stable"
+    }
+  },
+  "schema_version": 1,
+  "source": {
+    "commit": "9329bec483f7b94c8cad7834df2a3c028b9fc9fa",
+    "repository": "wyrd-company/trowel"
+  },
+  "tag": "0.3.0",
+  "version": "0.3.0"
+}
