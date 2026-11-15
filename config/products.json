@@ -123,6 +123,22 @@
           "package": "dcb-bin"
         }
       }
+    },
+    "deck": {
+      "source_repository": "wyrd-company/deck",
+      "package": {
+        "name": "deck",
+        "binary": "deck",
+        "description": "Discord conversations for agents through a secret-holding service",
+        "homepage": "https://github.com/wyrd-company/deck",
+        "license": "Apache-2.0",
+        "maintainer": "Wyrd Company <support@wyrd.company>"
+      },
+      "publish": {
+        "apt": {"suite": "stable", "component": "main"},
+        "rpm": {"channel": "stable"},
+        "aur": {"package": "deck-bin"}
+      }
     }
   }
 }
