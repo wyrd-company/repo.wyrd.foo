@@ -1,0 +1,101 @@
+{
+  "artifacts": [
+    {
+      "arch": "amd64",
+      "filename": "wyrwood_0.7.1_linux_x86_64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "9b2d7f7c883f93eeeaf03ad7d2905e51d599df38f6571b77f6b556e9ab5ea735",
+      "url": "https://github.com/wyrd-company/wyrwood/releases/download/0.7.1/wyrwood_0.7.1_linux_x86_64.tar.gz"
+    },
+    {
+      "arch": "arm64",
+      "filename": "wyrwood_0.7.1_linux_aarch64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "4d9360d24215221d57967bc57bc0756d610c75ddbedb070b67e10d5776655e91",
+      "url": "https://github.com/wyrd-company/wyrwood/releases/download/0.7.1/wyrwood_0.7.1_linux_aarch64.tar.gz"
+    },
+    {
+      "arch": "amd64",
+      "filename": "wyrwood_0.7.1_linux_x86_64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "727bc4d9142bcb89a6f1580def46d3acb72de60db3ac8f8d018aa75edffd2b40",
+      "url": "https://github.com/wyrd-company/wyrwood/releases/download/0.7.1/wyrwood_0.7.1_linux_x86_64.deb"
+    },
+    {
+      "arch": "arm64",
+      "filename": "wyrwood_0.7.1_linux_aarch64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "90617bd6cfbe11a21d0d371d5ed3cbca566c1a62c724248b65d63adc953fd269",
+      "url": "https://github.com/wyrd-company/wyrwood/releases/download/0.7.1/wyrwood_0.7.1_linux_aarch64.deb"
+    },
+    {
+      "arch": "amd64",
+      "filename": "wyrwood_0.7.1_linux_x86_64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "2ca78f242f233e18eb18b80f09c29de763c2bb991f23c3b9027450913418e387",
+      "url": "https://github.com/wyrd-company/wyrwood/releases/download/0.7.1/wyrwood_0.7.1_linux_x86_64.rpm"
+    },
+    {
+      "arch": "arm64",
+      "filename": "wyrwood_0.7.1_linux_aarch64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "b6fec59fac62fc3406bb9ce8d772a82fc4cd2819d8e1d1fcf186b76cc5eeee78",
+      "url": "https://github.com/wyrd-company/wyrwood/releases/download/0.7.1/wyrwood_0.7.1_linux_aarch64.rpm"
+    }
+  ],
+  "package": {
+    "binary": "wyrwood",
+    "description": "Filtered SSH-agent endpoints for containers",
+    "homepage": "https://github.com/wyrd-company/wyrwood",
+    "license": "Apache-2.0",
+    "maintainer": "Wyrd Company <support@wyrd.company>",
+    "name": "wyrwood"
+  },
+  "product": "wyrwood",
+  "publish": {
+    "apt": {
+      "component": "main",
+      "suite": "stable"
+    },
+    "aur": {
+      "installation": {
+        "files": {
+          "packaging/preinstall.sh": "/usr/lib/wyrwood/preinstall.sh",
+          "packaging/wyrwood-agent.service": "/usr/lib/systemd/system/wyrwood-agent.service",
+          "packaging/wyrwood-engine-proxy.service": "/usr/lib/systemd/system/wyrwood-engine-proxy.service",
+          "packaging/wyrwood-engine-upgrade.hook": "/usr/share/libalpm/hooks/wyrwood-engine-upgrade.hook",
+          "packaging/wyrwood.tmpfiles": "/usr/lib/tmpfiles.d/wyrwood.conf"
+        },
+        "hooks": {
+          "post-install": "packaging/postinstall.sh",
+          "post-remove": "packaging/postremove.sh",
+          "pre-install": "packaging/preinstall.sh",
+          "pre-remove": "packaging/preremove.sh"
+        }
+      },
+      "package": "wyrwood-bin"
+    },
+    "rpm": {
+      "channel": "stable"
+    }
+  },
+  "schema_version": 1,
+  "source": {
+    "commit": "b1708dee265db9c925f9e0d75ecd21277eec1384",
+    "repository": "wyrd-company/wyrwood"
+  },
+  "tag": "0.7.1",
+  "version": "0.7.1"
+}
