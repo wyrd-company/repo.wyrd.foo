@@ -215,6 +215,20 @@ class ManifestTests(unittest.TestCase):
             self.assertNotIn("install=", pkgbuild)
             self.assertFalse((output / "sample-tool-bin.install").exists())
 
+    def test_aur_package_follows_the_native_package_name(self) -> None:
+        for name in ("sample-tool-bin", "wyrd-sample-tool-bin"):
+            manifest = self.manifest()
+            manifest["publish"]["aur"]["package"] = name
+            with self.subTest(name=name):
+                repository.validate_manifest(manifest)
+        for name in ("other-tool-bin", "wyrd-other-tool-bin", "wyrd-sample-tool", "acme-sample-tool-bin"):
+            manifest = self.manifest()
+            manifest["publish"]["aur"]["package"] = name
+            with self.subTest(name=name), self.assertRaisesRegex(
+                repository.ManifestError, "native package name plus -bin"
+            ):
+                repository.validate_manifest(manifest)
+
     def test_queued_manifest_path_must_match_its_content(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

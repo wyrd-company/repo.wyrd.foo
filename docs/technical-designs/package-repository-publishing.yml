@@ -156,7 +156,9 @@ proposed-design:
     are regenerated or staged from the configured signing identity and
     uploaded as mutable configuration before signed publication pointers.
   aur-publication: >-
-    A release manifest declares one -bin AUR package. The publisher renders a
+    A release manifest declares one AUR package named after the native package
+    with a -bin suffix, or with a wyrd- prefix where another project already
+    holds the plain name on AUR. The publisher renders a
     PKGBUILD for x86_64 and aarch64 archives served by repo.wyrd.foo, generates
     .SRCINFO with makepkg in an Arch Linux container, verifies the official AUR
     SSH host fingerprint, and pushes through the configured AUR account. Its

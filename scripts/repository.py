@@ -143,8 +143,10 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
     if "installation" in aur:
         validate_installation(aur["installation"])
     aur_package = require_text(aur["package"], "publish.aur.package", 80)
-    if aur_package != f"{package['name']}-bin":
-        raise ManifestError("publish.aur.package must be the native package name plus -bin")
+    # The AUR name follows the native package. A wyrd- prefix is allowed where
+    # another project already holds the plain name on AUR.
+    if aur_package not in {f"{package['name']}-bin", f"wyrd-{package['name']}-bin"}:
+        raise ManifestError("publish.aur.package must be the native package name plus -bin, optionally prefixed wyrd-")
 
     artifacts = manifest["artifacts"]
     if not isinstance(artifacts, list) or len(artifacts) != len(EXPECTED_ARTIFACTS):
