@@ -215,6 +215,24 @@ class ManifestTests(unittest.TestCase):
             self.assertNotIn("install=", pkgbuild)
             self.assertFalse((output / "sample-tool-bin.install").exists())
 
+    def test_aur_package_conflicts_with_the_binary_package_name(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "same"
+            repository.render_aur(FIXTURE, output)
+            pkgbuild = (output / "PKGBUILD").read_text(encoding="utf-8")
+            self.assertIn("conflicts=('sample-tool')\n", pkgbuild)
+            manifest = self.manifest()
+            manifest["package"]["name"] = "wyrd-sample-tool"
+            manifest["publish"]["aur"]["package"] = "wyrd-sample-tool-bin"
+            manifest_path = Path(directory) / "renamed.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            output = Path(directory) / "renamed"
+            repository.render_aur(manifest_path, output)
+            pkgbuild = (output / "PKGBUILD").read_text(encoding="utf-8")
+        self.assertIn("provides=('wyrd-sample-tool')\n", pkgbuild)
+        self.assertIn("conflicts=('wyrd-sample-tool' 'sample-tool')\n", pkgbuild)
+        self.assertIn('"${pkgdir}/usr/bin/sample-tool"', pkgbuild)
+
     def test_aur_package_follows_the_native_package_name(self) -> None:
         for name in ("sample-tool-bin", "wyrd-sample-tool-bin"):
             manifest = self.manifest()

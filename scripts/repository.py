@@ -585,6 +585,11 @@ def render_aur(manifest_path: Path, output: Path, artifacts_root: Path | None = 
     base_url = f"https://repo.wyrd.foo/artifacts/{manifest['product']}/{manifest['version']}"
     output.mkdir(parents=True, exist_ok=True)
     maintainer = package["maintainer"]
+    # A package named apart from its binary also conflicts with the package
+    # named after the binary, which installs the same /usr/bin path.
+    conflicts = " ".join(
+        shell_single_quote(name) for name in dict.fromkeys((package["name"], package["binary"]))
+    )
     pkgbuild = f"""# Maintainer: {maintainer}
 pkgname={shell_single_quote(aur_name)}
 pkgver={shell_single_quote(manifest['version'])}
@@ -594,7 +599,7 @@ arch=('x86_64' 'aarch64')
 url={shell_single_quote(package['homepage'])}
 license=({shell_single_quote(package['license'])})
 provides=({shell_single_quote(package['name'])})
-conflicts=({shell_single_quote(package['name'])})
+conflicts=({conflicts})
 options=('!strip')
 source_x86_64=("${{pkgname}}-${{pkgver}}-x86_64.tar.gz::{base_url}/{archives['amd64']['filename']}")
 source_aarch64=("${{pkgname}}-${{pkgver}}-aarch64.tar.gz::{base_url}/{archives['arm64']['filename']}")

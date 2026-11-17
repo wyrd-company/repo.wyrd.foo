@@ -161,7 +161,10 @@ proposed-design:
     holds the plain name on AUR. The publisher renders a
     PKGBUILD for x86_64 and aarch64 archives served by repo.wyrd.foo, generates
     .SRCINFO with makepkg in an Arch Linux container, verifies the official AUR
-    SSH host fingerprint, and pushes through the configured AUR account. Its
+    SSH host fingerprint, and pushes through the configured AUR account. The
+    package provides its native package name and conflicts with it and, when
+    the binary is named differently, with the package named after the
+    binary, which installs the same /usr/bin path. Its
     render workspace is created under the canonical GitHub runner temporary
     directory and mounted into Docker only through an absolute read-only bind
     path. The package installs the binary, declared license, and README.
