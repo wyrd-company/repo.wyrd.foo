@@ -137,7 +137,7 @@
       "publish": {
         "apt": {"suite": "stable", "component": "main"},
         "rpm": {"channel": "stable"},
-        "aur": {"package": "deck-bin"}
+        "aur": {"package": "wyrd-deck-bin"}
       }
     }
   }

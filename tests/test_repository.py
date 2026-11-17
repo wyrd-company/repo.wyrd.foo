@@ -229,6 +229,37 @@ class ManifestTests(unittest.TestCase):
             ):
                 repository.validate_manifest(manifest)
 
+    def test_deck_publishes_to_aur_as_wyrd_deck_bin_providing_deck(self) -> None:
+        # AUR deck-bin belongs to Kong decK; deck must not publish under it.
+        allowlist = ROOT / "config" / "products.json"
+        approved = repository.load_product_allowlist(allowlist)["deck"]
+        manifest = self.manifest()
+        manifest["product"] = "deck"
+        manifest["source"]["repository"] = approved["source_repository"]
+        manifest["package"] = copy.deepcopy(approved["package"])
+        manifest["publish"] = copy.deepcopy(approved["publish"])
+        for artifact in manifest["artifacts"]:
+            artifact["url"] = (
+                f"https://github.com/{approved['source_repository']}/releases/download/"
+                f"{manifest['tag']}/{artifact['filename']}"
+            )
+        repository.validate_manifest(manifest)
+        repository.validate_allowed_product(manifest, allowlist)
+        old_name = copy.deepcopy(manifest)
+        old_name["publish"]["aur"]["package"] = "deck-bin"
+        with self.assertRaisesRegex(repository.ManifestError, "disagrees with the allowlist"):
+            repository.validate_allowed_product(old_name, allowlist)
+        with tempfile.TemporaryDirectory() as directory:
+            manifest_path = Path(directory) / "deck.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            output = Path(directory) / "aur"
+            repository.render_aur(manifest_path, output)
+            pkgbuild = (output / "PKGBUILD").read_text(encoding="utf-8")
+        self.assertIn("pkgname='wyrd-deck-bin'", pkgbuild)
+        self.assertIn("provides=('deck')", pkgbuild)
+        self.assertIn("conflicts=('deck')", pkgbuild)
+        self.assertIn('"${pkgdir}/usr/bin/deck"', pkgbuild)
+
     def test_queued_manifest_path_must_match_its_content(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -365,7 +396,9 @@ class ManifestTests(unittest.TestCase):
                 self.assertEqual(products[name]["package"]["license"], "MIT" if name == "dcb" else "Apache-2.0")
                 self.assertEqual(products[name]["publish"]["apt"], {"suite": "stable", "component": "main"})
                 self.assertEqual(products[name]["publish"]["rpm"], {"channel": "stable"})
-                self.assertEqual(products[name]["publish"]["aur"]["package"], f"{name}-bin")
+                # AUR deck-bin is Kong decK's package, so deck publishes as wyrd-deck-bin.
+                aur_package = "wyrd-deck-bin" if name == "deck" else f"{name}-bin"
+                self.assertEqual(products[name]["publish"]["aur"]["package"], aur_package)
                 self.assertEqual("installation" in products[name]["publish"]["aur"], name in {"trowel", "wyrwood"})
 
     def test_resolver_reuses_original_addition_for_unchanged_recovery(self) -> None:
