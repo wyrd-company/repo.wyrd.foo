@@ -65,6 +65,38 @@ with an ASCII-armored copy of the same repository key at `pubkey.asc`.
 
 Prebuilt Arch packages are published to the AUR as `<product>-bin`.
 
+## Submit a release
+
+Product repositories submit a release manifest with the
+`wyrd-company/repo.wyrd.foo/.github/actions/submit-release` action, pinned by
+commit. It validates the manifest, commits it to the `release-manifests` inbox
+and requests publication of that commit.
+
+The action takes the installation token of the repo.wyrd.foo publisher App
+as `token`. Request the token for exactly:
+
+- Repository: `wyrd-company/repo.wyrd.foo` only, in the `wyrd-company`
+  organization.
+- Permissions: Contents `write`. Metadata `read` comes with every installation
+  token. Request no other permission.
+
+With `token` set, the action reads no private key and mints no token. It
+names the commit author `<app-slug>[bot]`, where `app-slug` defaults to
+`repo-wyrd-foo-publisher`; pass `app-slug` if the App's slug differs.
+
+```yaml
+- uses: wyrd-company/repo.wyrd.foo/.github/actions/submit-release@<commit>
+  with:
+    manifest: release-manifest.json
+    token: ${{ steps.app-repo-wyrd-foo.outputs.token }}
+```
+
+Callers that pass `app-client-id` and `app-private-key` instead keep working:
+without `token`, the action mints its own token from them with the same
+repository and permission. That path puts the App's private key on the
+runner, which the organization's delivery standard does not allow, so use
+`token`. The key inputs will be removed in a later change.
+
 ## Documentation
 
 The publishing design, contract, and repository rulesets are described in
