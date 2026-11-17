@@ -1,0 +1,86 @@
+{
+  "artifacts": [
+    {
+      "arch": "amd64",
+      "filename": "deck_0.1.3_linux_x86_64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "13e2677e80603c9ce73304708665ddaaf24f43d977ccd48549528f064da2bc48",
+      "url": "https://github.com/wyrd-company/deck/releases/download/0.1.3/deck_0.1.3_linux_x86_64.tar.gz"
+    },
+    {
+      "arch": "arm64",
+      "filename": "deck_0.1.3_linux_aarch64.tar.gz",
+      "format": "tar.gz",
+      "kind": "archive",
+      "os": "linux",
+      "sha256": "9eb075fe33168fba27f4825d25ae429c08309a5f4dfcc57148b714e7dfc6fc7a",
+      "url": "https://github.com/wyrd-company/deck/releases/download/0.1.3/deck_0.1.3_linux_aarch64.tar.gz"
+    },
+    {
+      "arch": "amd64",
+      "filename": "wyrd-deck_0.1.3_linux_x86_64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "c373c754565f9d86325bce684339e484bf47f1d69902e2761eb84ceb5c369de6",
+      "url": "https://github.com/wyrd-company/deck/releases/download/0.1.3/wyrd-deck_0.1.3_linux_x86_64.deb"
+    },
+    {
+      "arch": "arm64",
+      "filename": "wyrd-deck_0.1.3_linux_aarch64.deb",
+      "format": "deb",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "7300e98af5732c286ac43918d0fa82972ccc5a15ec03b4b56904144da6a27ba3",
+      "url": "https://github.com/wyrd-company/deck/releases/download/0.1.3/wyrd-deck_0.1.3_linux_aarch64.deb"
+    },
+    {
+      "arch": "amd64",
+      "filename": "wyrd-deck_0.1.3_linux_x86_64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "85419ba9b1deb14c17e98888254a2f0937ac5f8681eed44fe2774c8a9984ad8f",
+      "url": "https://github.com/wyrd-company/deck/releases/download/0.1.3/wyrd-deck_0.1.3_linux_x86_64.rpm"
+    },
+    {
+      "arch": "arm64",
+      "filename": "wyrd-deck_0.1.3_linux_aarch64.rpm",
+      "format": "rpm",
+      "kind": "package",
+      "os": "linux",
+      "sha256": "b7c11113968ef3cc7a9a8f3db810fcdd5b665217024fe424125ce5eda813f6a1",
+      "url": "https://github.com/wyrd-company/deck/releases/download/0.1.3/wyrd-deck_0.1.3_linux_aarch64.rpm"
+    }
+  ],
+  "package": {
+    "binary": "deck",
+    "description": "Discord conversations for agents through a secret-holding service",
+    "homepage": "https://github.com/wyrd-company/deck",
+    "license": "Apache-2.0",
+    "maintainer": "Wyrd Company <support@wyrd.company>",
+    "name": "wyrd-deck"
+  },
+  "product": "deck",
+  "publish": {
+    "apt": {
+      "component": "main",
+      "suite": "stable"
+    },
+    "aur": {
+      "package": "wyrd-deck-bin"
+    },
+    "rpm": {
+      "channel": "stable"
+    }
+  },
+  "schema_version": 1,
+  "source": {
+    "commit": "2ed4796f22c8bac154239b0e5134ab3b5d75d002",
+    "repository": "wyrd-company/deck"
+  },
+  "tag": "0.1.3",
+  "version": "0.1.3"
+}
