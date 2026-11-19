@@ -1,0 +1,32 @@
+{
+  "$schema": "https://intentional.foo/schemas/release-model/1",
+  "paths": {
+    "config": ".intentional/config.yml",
+    "intents": ".intentional/intents",
+    "model": ".intentional/release-model.json"
+  },
+  "release_groups": {
+    "fixed": [],
+    "linked": []
+  },
+  "release_units": {
+    "submission-action": {
+      "changelog": ".github/actions/submit-release/CHANGELOG.md",
+      "depends_on": [],
+      "disposition": "managed",
+      "ecosystems": [],
+      "path": ".github/actions/submit-release",
+      "projections": [],
+      "release_record": "required",
+      "sources": [],
+      "tags": {
+        "primary": {
+          "role": "primary",
+          "tag_after": [],
+          "template": "{version}"
+        }
+      }
+    }
+  },
+  "workspace_tags": {}
+}

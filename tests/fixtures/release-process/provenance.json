@@ -1,0 +1,19 @@
+{
+  "x-relationships": {
+    "references": [
+      "package-repository-publishing"
+    ]
+  },
+  "repository": "wyrd-company/.github",
+  "revision": "aa9f4c9797ff4fe1121a1efcb03dcb557ffb678f",
+  "schemas": {
+    "publish-job.schema.json": {
+      "source": "release/schemas/publish-job.schema.json",
+      "sha256": "6850075095d13e558059f2f57a10c84b6a87f5744eb67a8d1a65f98c7d37548b"
+    },
+    "credential.schema.json": {
+      "source": "release/schemas/credential.schema.json",
+      "sha256": "cb11d866e5da62f58958861add0a9c2aaf7851a8ba18eac2500e3183aa913027"
+    }
+  }
+}
