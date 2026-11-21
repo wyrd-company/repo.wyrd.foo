@@ -10,18 +10,42 @@ inputs:
   manifest:
     description: Path to the release manifest in the caller workspace
     required: true
+  token:
+    description: >-
+      Installation token of the repo.wyrd.foo publisher GitHub App, scoped to
+      wyrd-company/repo.wyrd.foo with Contents read and write. When set, the
+      action reads no private key and mints no token.
+    required: false
+  app-slug:
+    description: >-
+      Slug of the publisher App, which names the commit author. Used when token
+      is set; a token the action mints itself carries the App's slug.
+    required: false
+    default: repo-wyrd-foo-publisher
   app-client-id:
-    description: Client ID of the repo.wyrd.foo publisher GitHub App
-    required: true
+    description: >-
+      Client ID of the repo.wyrd.foo publisher GitHub App. Used only when token
+      is not set.
+    required: false
   app-private-key:
-    description: Private key of the repo.wyrd.foo publisher GitHub App
-    required: true
+    description: >-
+      Private key of the repo.wyrd.foo publisher GitHub App. Used only when
+      token is not set. Prefer token.
+    required: false
 
 runs:
   using: composite
   steps:
+    - name: Mask supplied installation token
+      if: inputs.token != ''
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.token }}
+      run: echo "::add-mask::${TOKEN}"
+
     - name: Create repository-scoped installation token
       id: token
+      if: inputs.token == ''
       uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
       with:
         client-id: ${{ inputs.app-client-id }}
@@ -35,7 +59,7 @@ runs:
       with:
         repository: wyrd-company/repo.wyrd.foo
         ref: release-manifests
-        token: ${{ steps.token.outputs.token }}
+        token: ${{ inputs.token || steps.token.outputs.token }}
         path: .repo-wyrd-foo
         persist-credentials: false
 
@@ -50,8 +74,8 @@ runs:
       if: steps.submit.outputs.state == 'created'
       shell: bash
       env:
-        APP_SLUG: ${{ steps.token.outputs.app-slug }}
-        APP_TOKEN: ${{ steps.token.outputs.token }}
+        APP_SLUG: ${{ steps.token.outputs.app-slug || inputs.app-slug }}
+        APP_TOKEN: ${{ inputs.token || steps.token.outputs.token }}
         RESULT: ${{ steps.submit.outputs.path }}
       working-directory: .repo-wyrd-foo
       run: "$GITHUB_ACTION_PATH/../../../scripts/commit-release.sh"
@@ -67,7 +91,7 @@ runs:
     - name: Request package publication
       shell: bash
       env:
-        GH_TOKEN: ${{ steps.token.outputs.token }}
+        GH_TOKEN: ${{ inputs.token || steps.token.outputs.token }}
         INBOX_COMMIT: ${{ steps.inbox.outputs.commit }}
         MANIFEST_PATH: ${{ steps.submit.outputs.path }}
       run: "$GITHUB_ACTION_PATH/../../../scripts/dispatch-release.sh"
